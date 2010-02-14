@@ -1,16 +1,18 @@
 
-## Checks the bounds of the parameters
-## in:
-##  lower, upper: vectors of length ndim
-##  x: matrix nseq x ndim
-##  bound.handling: one of reflect, bound, fold, none
+##' Checks the bounds of the parameters
+##' @param x usually matrix nseq x ndim. vector interpreted as 1 x ndim matrix
+##' @param lower vector of length ndim
+##' @param upper vector of length ndim
+##' @param bound.handling one of reflect, bound, fold, none
+##' @return x matrix nseq x ndim now with parameter-wise range [xmin,xmax]
 handleBounds <- function(x, lower, upper, bound.handling)
 {
   if (is.vector(x)) x<-t(x)
   stopifnot(is.matrix(x))
+  
+  ## Iterate through parameters
+  ## Modify points that are below or above bounds
   for (p in 1:ncol(x)){
-    ##At each pass, different parameter
-    ## Modify points that are below or above bounds
     too.low<-which(x[,p]<lower[p])
     too.high<-which(x[,p]>upper[p])
     switch(bound.handling,
@@ -25,10 +27,14 @@ handleBounds <- function(x, lower, upper, bound.handling)
            fold = {
              ## ------- New approach that maintains detailed balance ----------
              x[too.low,p] <- upper[p]-(lower[p]-x[too.low,p])
+             too.high<-which(x[,p]>upper[p])
              x[too.high,p] <- lower[p]+(x[too.high,p]-upper[p])
            },
            none = x,
-           stop("unrecognised value of 'bound.handling'")
+           rand = {
+             x[c(too.low,too.high),p] <- lower[p] +  runif(1)*(upper[p]-lower[p])
+           },
+           stop("Unrecognised value of 'bound.handling'")
            )#switch
     if (bound.handling!="none") stopifnot(all(x[,p]>=lower[p] & x[,p]<=upper[p]))
   } ##for p

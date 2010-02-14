@@ -10,12 +10,12 @@
 ## Multivariate Analysis'.$$
 ## 
 ## Inputs:
-## p - number of independent variables.
-## n - sample size.
-## alpha - significance level (default = 0.05).
+##' @param p number of independent variables.
+##' @param n sample size.
+##' @param alpha significance level (default = 0.05).
 ## 
 ## Output:
-## x - critical value of the maximun squared Mahalanobis distance.
+##' @return ACR value of the maximum squared Mahalanobis distance.
 ## 
 ## We can generate all the critical values of the maximun squared Mahalanobis
 ## distance presented on the Table XXXII of by Barnett and Lewis (1978) and 
@@ -59,17 +59,17 @@
 ##
 ACR <- function(p,n,alpha){
 
-if (missing(alpha)) alpha <- 0.05
+  if (missing(alpha)) alpha <- 0.05
 
-if (alpha<=0 | alpha>=1) stop("Significance level must be between 0 and 1")
+  if (alpha<=0 | alpha>=1) stop("Significance level must be between 0 and 1")
 
-if (missing(p)|missing(n)) stop("Requires args p and n")
+  if (missing(p)|missing(n)) stop("Requires args p and n")
 
-a <- alpha
-## F distribution critical value with p and n-p-1 degrees of freedom using the Bonferroni correction
-Fc <- qf(1-a/n,p,n-p-1)
-ACR <- (p*(n-1)^2*Fc)/(n*(n-p-1)+(n*p*Fc))
+  a <- alpha
+  ## F distribution critical value with p and n-p-1 degrees of freedom using the Bonferroni correction
+  Fc <- qf(1-a/n,p,n-p-1)
+  ACR <- (p*(n-1)^2*Fc)/(n*(n-p-1)+(n*p*Fc))
 
-return(ACR)
+  return(ACR)
   
-}##ACR
+} ##ACR

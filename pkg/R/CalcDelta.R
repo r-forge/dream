@@ -1,18 +1,26 @@
-## Calculate total normalized Euclidean distance for each crossover value
-## in:
-##   delta.tot	vector of length nCR ? TODO
-##   delta.normX	vector of length ndim ? TODO
-##   CR		vector of length nseq ? TODO
-CalcDelta <- function(control,delta.tot,delta.normX,CR){
+##' Calculate total normalized Euclidean distance for each crossover value
 
+##' @param nCR. scalar
+##' @param delta.tot vector of length nCR
+##' @param delta.normX vector of length nseq
+##' @param CR vector of length nseq
+
+##' @return delta.tot vector of length nCR
+CalcDelta <- function(nCR,delta.tot,delta.normX,CR){
+
+  ## Dimensions:
+  ##  zz. iter 1:nCR
+  ##  idx. vector. length [0,nseq]. range [1,nseq]
+  
   ## Derive sum_p2 for each different CR value
-  for (zz in 1:control$nCR){
+  for (zz in 1:nCR){
     ## Find which chains are updated with zz/MCMCPar.nCR
     ## TODO: possible that floating point error prevents exact comparison?
-    idx <- which(CR==zz/control$NCR)
+    idx <- which(CR==zz/nCR)
     
     ## Add the normalized squared distance tot the current delta_tot;
     delta.tot[zz] <- delta.tot[zz]+sum(delta.normX[idx])
+    
   } ## for CRs
   return(delta.tot)
 } ##CalcDelta
