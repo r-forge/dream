@@ -25,11 +25,13 @@ library(coda)
 ## MATLAB function:
 ## function [Sequences,Reduced_Seq,X,output,hist_logp] = dream(MCMCPar,ParRange,Measurement,ModelName,Extra,option)
 
-dream <- function(FUN, pars = list(x = range(0, 1e6)),
-                  measurement,
+dream <- function(FUN, func.type,
+                  pars = list(x = range(0, 1e6)),
                   ...,
                   INIT = LHSInit,
-                  control = list()) #, do.SSE = FALSE)
+                  control = list(),
+                  measurement=NULL
+                  )
 {
 
   
@@ -44,11 +46,13 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
   ##  delta.tot vector of length nCR
 
   
-  If (is.character(FUN))
-  FUN <- get(FUN, mode = "function")
+  if (is.character(FUN))
+    FUN <- get(FUN, mode = "function")
   stopifnot(is.function(FUN))
   stopifnot(is.list(par))
   stopifnot(length(par) > 0)
+  stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
+
 
   pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
 
@@ -144,8 +148,8 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
   ## Sequences[1,] <- sapply(pars, mean) ## TODO: include?
 
   ## Check whether will save a reduced sample
-  if (thin){
-    Reduced.Seq <- array(NA,c(floor(n.elem/thin.t),NDIM+2,NSEQ))
+  if (control$thin){
+    Reduced.Seq <- array(NA,c(floor(n.elem/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
 
 ############################
@@ -160,14 +164,14 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
 ################################
   
   ## Step 1: Sample s points in the parameter space
-  x <- INIT(pars, nseq,...)
+  x <- INIT(pars, NSEQ,...)
 
   ## make each element of pars a list and extract lower / upper
   lower <- sapply(pars, function(x) min(x[[1]]))
   upper <- sapply(pars, function(x) max(x[[1]]))
 
   ##Step 2: Calculate posterior density associated with each value in x
-  tmp<-CompDensity(x, control = control, FUN = FUN, ...)
+  tmp<-CompDensity(x, control = control, FUN = FUN, func.type=func.type,measurement=measurement...)
   ##Save the initial population, density and log density in one list X
   X<-cbind(x=x,p=tmp$p,logp=tmp$logp)
   if (!is.null(names(pars))) colnames(X) <- c(names(pars),"p","logp")
@@ -187,7 +191,7 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
   ##Compute R-statistic. Using coda package
   ## TODO: more elegant way of using coda. And check for correctness
   ## TODO: alternatively, convert matlab implementation
-  obj$R.stat[1,] <- c(Iter,gelman.diag(as.mcmc.list(lapply(1:nseq,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i])))))
+  obj$R.stat[1,] <- c(Iter,gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i])))))
 
 ################################
   ##Start iteration
@@ -234,7 +238,7 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
       Sequences[iloc,,] <- t(newgen)
 
       ## Check reduced sample collection
-      if (thin && new_teller == thin.t){
+      if (control$thin && new_teller == control$thin.t){
         ## Update iloc_2 and new_teller
         iloc.2 <- iloc.2+1
         new_teller <- 0
@@ -259,7 +263,7 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
       hist.logp[counter,] <- X[,NDIM+2]
       
       ## Save some important output -- Acceptance Rate
-      obj$AR[counter] <- 100 * sum(accept) / nseq
+      obj$AR[counter] <- 100 * sum(accept) / NSEQ
 
       ## Update Iteration and counter
       Iter <- Iter + NSEQ
@@ -309,7 +313,7 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
 
     ## Calculate Gelman and Rubin convergence diagnostic
     ## Compute the R-statistic using 50% burn-in from Sequences
-    obj$R.stat <- gelman.diag(as.mcmc.list(lapply(1:nseq,function(i) as.mcmc(Sequences[,1:NDIM,i]))),autoburnin=TRUE)
+    obj$R.stat <- gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i]))),autoburnin=TRUE)
 
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
@@ -331,7 +335,7 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
     obj$Sequences <- Sequences[1:i,,]
   }
   ## Remove extra rows from Reduced.Seq
-  if (thin){
+  if (control$thin){
     i <- which(rowSums(Reduced.Seq)==0)
     if (length(i)>0) {
       i <- i[1]-1
@@ -358,7 +362,8 @@ dream <- function(FUN, pars = list(x = range(0, 1e6)),
   }
   
   ## store number of function evaluations
-  obj$counts <- funevals
+  ## TODO: funevals is not calculated atm
+  ## obj$counts <- funevals
   ## store number of iterations
   obj$iterations <- i
   ## store the amount of time taken

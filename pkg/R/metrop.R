@@ -7,13 +7,14 @@
 ##' @param p.old vector of length nseq
 ##' @param logp.old vector of length nseq
 ##' @param measurement. needs N and sigma
-##' @param control. needs gamma,metrop.opt range [1,5]
-
+##' @param control list with elements:
+##'   gamma
+##'   metrop.opt range [1,5] 
 ##' @return ... list with elements
 ##'   newgen matrix nseq x ndim+2 (same as X in dream.R)
 ##'   alpha scalar probability of acceptance. range [0,1]
 ##'   accept vector indicating whether each sequences was accepted. length nseq
-
+##  TODO: names for control$metrop.opt.
 metrop<-function(x,p.x,logp.x,
                  x.old,p.old,logp.old,
                  measurement,control
@@ -34,7 +35,7 @@ metrop<-function(x,p.x,logp.x,
   ## And initialize accept with false
   accept <- rep(FALSE,nr.chains)
   
-  switch(option,
+  switch(control$metrop.opt,
          "1" = {
            alpha <- min(p.x/p.old,1)
          },

@@ -1,23 +1,29 @@
 ##' Computes the density of each x value
 ##'
 ##' @param x matrix nseq x ndim
-##' @param control. list containing gamma,Wb,Cb
+##' @param control. list containing gamma,Wb,Cb,nseq
 ##' @param FUN - the model to run
 ##'   R function with first argument a vector of length ndim.
-##'   returning a single scalar corresponding to one of the options:
-##' @param option unambiguous abbrev of:
-##'   posterior.density, calc.loglik, calc.rmse, logposterior.density,calc.weighted.rmse
+##'   returns a scalar or vector corresponding to one of the options below.
+##' @param option Type of function output. One of:
+##'   posterior.density, logposterior.density,
+##'   calc.loglik. requires optional parameter measurement with elements data & sigma
+##'   calc.rmse, calc.weighted.rmse.  requires measurement$data
 ##' @param measurement list containing TODO: not sure
 ##'   data: vector of observations corresponding to model output
 ##'   sigma: scalar
 ##' @param ... additional arguments to FUN
-##' @return ... list with components
+##' @return list with elements
 ##'   p vector of length nseq
 ##'   logp vector of length nseq
 ##
 ## TODO: p may be erroneously equal to logp?
-CompDensity <- function(x,control,FUN,option,
-                        measurement,...){
+## TODO: more appropriate naming of options?
+## TODO: allow shortenings of option?
+CompDensity <- function(x,control,FUN,func.type,
+                        measurement=NULL,...){
+
+  stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
 
   ## dimensions:
   ##  i. iter 1:nseq
@@ -25,8 +31,8 @@ CompDensity <- function(x,control,FUN,option,
   ##  err. vector of same length as modpred
   ##  SSR scalar
 
-  p <- rep(NA,nseq)
-  logp <- rep(NA,nseq)
+  p <- rep(NA,control$nseq)
+  logp <- rep(NA,control$nseq)
   
   ## Sequential evaluation
   for (ii in 1:nrow(x)){
@@ -34,7 +40,7 @@ CompDensity <- function(x,control,FUN,option,
     ## TODO: correct use of optional pars?
     modpred <- FUN(x[ii,],...)
 
-    switch(option,
+    switch(func.type,
            ## Model directly computes posterior density
            posterior.density={
              p[ii] <- modpred

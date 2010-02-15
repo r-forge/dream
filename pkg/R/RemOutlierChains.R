@@ -40,7 +40,7 @@ RemOutlierChains <- function(X,hist.logp,control){
            ## Derive the upper and lower quantile of the data
            q13<-quantile(mean.hist.logp,c(0.75,0.25))
            ## Derive the Inter quartile range
-           iqr <- q13[1]-q12[2]
+           iqr <- q13[1]-q13[2]
            ## Compute the upper range -- to detect outliers
            ## TODO: shouldn't upper.range be Q3+3*IQR?
            upper.range <- q13[2]-2*iqr

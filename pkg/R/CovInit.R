@@ -17,7 +17,7 @@ CovInit <- function(pars,nseq,muX,qcov,bound.handling)
 {
 
   ##[x] = repmat(Extra.muX,MCMCPar.seq,1) + randn(MCMCPar.seq,MCMCPar.n) * chol(Extra.qcov);
-  x <- t(matrix(rep(a,nseq),length(a)))+randn(nseq,length(pars)) %*% chol(qcov)
+  x <- t(matrix(rep(muX,nseq),length(muX)))+randn(nseq,length(pars)) %*% chol(qcov)
   
   lower <- sapply(pars, function(x) min(x[[1]]))
   upper <- sapply(pars, function(x) max(x[[1]]))
