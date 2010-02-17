@@ -5,8 +5,8 @@
 ##'  @param muX vector of length ndim
 ##'  @param qcov
 ##'  @param bound.handling. character one of: none,reflect,bound,fold,rand
-##'  @return ...
-##'    x. dim nseq x ndim. parameter wise range [xmin,xmax] assured by handleBounds
+##'  @return x
+##'    matrix dim nseq x ndim. parameter wise range [xmin,xmax] assured by handleBounds
 ##
 ## depends on:
 ##   handleBounds.R

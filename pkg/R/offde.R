@@ -29,7 +29,7 @@ offde<-function(x.old,control,CR,
   ##  delta.x. matrix nseq x ndim
   ##  qq. iter. range [1,nseq]
   ##  ii. vector. length nseq-1. range [1,nseq]
-  ##  rr. vector. length 2. range [1,nseq]
+  ##  rr. vector. length [0,2*DEpairs]. range [1,nseq]
   ##  i. vector. length [1,ndim]. range [1,ndim]
   ##  JumpRate. scalar. range (0,~1.683]
   ##  delta.  vector. length ndim
@@ -54,7 +54,7 @@ offde<-function(x.old,control,CR,
   noise.x<-control$eps * (2*rand(nseq,ndim)-1)
     
   ## Initialize the delta update
-  delta.x<-matrix(NA,nseq,ndim)
+  delta.x<-matrix(0,nseq,ndim)
   
   ## Each chain evolves using information from other chains to create offspring
   for (qq in 1:nseq){
@@ -63,10 +63,10 @@ offde<-function(x.old,control,CR,
     ii <- (1:nseq)[-qq]
     
     ## randomly select two members of ii
-    rr <- ii[tt[1:2*DEversion[qq],qq]]
+    rr <- ii[tt[1:(2*DEversion[qq]),qq]]
     
     ## --- WHICH DIMENSIONS TO UPDATE? DO SOMETHING WITH CROSSOVER ----
-    i <- which(D[qq,]>(1-CR[qq,1]))
+    i <- which(D[qq,]>(1-CR[qq]))
 
     ## Update at least one dimension
     if (length(i)==0) i <- sample(ndim,1)
@@ -81,7 +81,7 @@ offde<-function(x.old,control,CR,
       JumpRate <- Table.JumpRate[NrDim,DEversion[qq]]
       
       ## Produce the difference of the pairs used for population evolution
-      delta <- colSums(x.old[rr[1:DEversion[qq]],]-x.old[rr[DEversion[qq]+1:2*DEversion[qq]],])
+      delta <- colSums(x.old[rr[1:DEversion[qq]],,drop=FALSE]-x.old[rr[(DEversion[qq]+1):(2*DEversion[qq])],,drop=FALSE])
       
       ## Then fill update the dimension
       delta.x[qq,i] <- (1+noise.x[qq,i])*JumpRate*delta[i]
@@ -112,11 +112,12 @@ offde<-function(x.old,control,CR,
   ## If delayed rejection step --> generate proposal with DR
   ## Loop over all chains -- all dimensions are updated
   ## Generate a new proposal distance using standard procedure
-
   
   ## Update x.old with delta_x and eps;
   x.new <- x.old+delta.x+eps
   x.new <- handleBounds(x.new,lower,upper,control$boundHandling)
 
+  stopifnot(!any(is.na(x.new)))
+  stopifnot(!any(is.na(CR)))
   return(list(x.new=x.new,CR=CR))
 }#function offde

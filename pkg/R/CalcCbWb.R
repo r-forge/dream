@@ -11,6 +11,6 @@ CalcCbWb <- function(beta){
   ## And use these to derive Cb and Wb
   Cb <- (A1/A2)^(1/(1+beta))
   Wb <- sqrt(A1)/((1+beta)*(A2^1.5))
-  return(c(Cb=Cb,Wb=Wb))
+  return(list(Cb=Cb,Wb=Wb))
 }
 

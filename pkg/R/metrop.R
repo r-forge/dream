@@ -6,8 +6,12 @@
 ##' @param x.old matrix nseq x ndim
 ##' @param p.old vector of length nseq
 ##' @param logp.old vector of length nseq
-##' @param measurement. needs N and sigma
+##' @param func.type Type of function output. One of:
+##'   posterior.density, logposterior.density,
+##'   calc.loglik. requires optional parameter measurement with elements data & sigma
+##'   calc.rmse, calc.weighted.rmse.  requires measurement$data
 ##' @param control list with elements:
+##' @param measurement. needs N and sigma
 ##'   gamma
 ##'   metrop.opt range [1,5] 
 ##' @return ... list with elements
@@ -17,9 +21,13 @@
 ##  TODO: names for control$metrop.opt.
 metrop<-function(x,p.x,logp.x,
                  x.old,p.old,logp.old,
-                 measurement,control
+                 func.type,control,
+                 measurement=NULL
                  ){
 
+  stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
+  stopifnot(!any(is.na(p.x)))
+  
   ## dimensions:
   ##  nr.chains scalar. should be = control$nseq
   ##  Z vector of length nseq range [0,1]
@@ -35,28 +43,33 @@ metrop<-function(x,p.x,logp.x,
   ## And initialize accept with false
   accept <- rep(FALSE,nr.chains)
   
-  switch(control$metrop.opt,
-         "1" = {
+  switch(func.type,
+         posterior.density = {
            alpha <- min(p.x/p.old,1)
          },
-         "2" = { ## Lnp probability evaluation
+         calc.loglik = { ## Lnp probability evaluation
            alpha <- min(exp(p.x-p.old),1)
          },
-         "3" = { ## SSE probability evaluation
+         calc.rmse = { ## SSE probability evaluation
            alpha <- min((p.x/p.old)^(-measurement$N*(1+control$gamma)/2),1)
          },
-         "4" = { ## Lnp probability evaluation
+         logposterior.density = { ## Lnp probability evaluation
            alpha <- min(exp(p.x-p.old),1)
          },
-         "5" = { ## Similar to 3 but now weighted with Measurement.Sigma
+         calc.weighted.rmse = { ## Similar to 3 but now weighted with Measurement.Sigma
            ## signs are different because we write -SSR
            alpha <- min(exp(-0.5*(-p.x + p.old)/measurement$sigma^2),1);
-         })
-
+         },
+         stop("Unrecognised value of control$metrop.opt")
+         )
+  
   ## Generate random numbers
   Z <- runif(nr.chains)
   ## Find which alpha's are greater than Z
   idx <- which(Z<alpha)
+
+  ##stopifnot(length(idx)>0) ##Unlikely, but possible
+  
   ## And update these chains
   newgen[idx,] <- c(x[idx,],p.x[idx],logp.x[idx])
          

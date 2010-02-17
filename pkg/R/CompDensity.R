@@ -5,7 +5,7 @@
 ##' @param FUN - the model to run
 ##'   R function with first argument a vector of length ndim.
 ##'   returns a scalar or vector corresponding to one of the options below.
-##' @param option Type of function output. One of:
+##' @param func.type Type of function output. One of:
 ##'   posterior.density, logposterior.density,
 ##'   calc.loglik. requires optional parameter measurement with elements data & sigma
 ##'   calc.rmse, calc.weighted.rmse.  requires measurement$data
@@ -24,7 +24,8 @@ CompDensity <- function(x,control,FUN,func.type,
                         measurement=NULL,...){
 
   stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
-
+  stopifnot(!any(is.na(x)))
+  
   ## dimensions:
   ##  i. iter 1:nseq
   ##  modpred. scalar or vector commensurate to measurement$data
@@ -86,5 +87,8 @@ CompDensity <- function(x,control,FUN,func.type,
              logp[ii] <- -0.5*SSR
            }) ##switch
   }           ## for rows
+
+  stopifnot(!any(is.na(p)))
+  stopifnot(!any(is.na(logp)))
   return(list(p=p,logp=logp))
 } ##CompDensity

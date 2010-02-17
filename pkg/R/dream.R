@@ -17,7 +17,7 @@ dreamDefaults <- function()
          REPORT = 10,            ## number of iterations between reports when trace >= 1
          thin=FALSE,             ## do reduced sample collection
          thin.t=NA,               ## parameter for reduced sample collection
-         metrop.opt=NA            ## ?? which option to use for metropolis acceptance/rejection. Some also need measurement$sigma
+	   ndim=NA ## number of parameters (automatically set from length of pars)
          )            
 
 library(coda)
@@ -25,10 +25,28 @@ library(coda)
 ## MATLAB function:
 ## function [Sequences,Reduced_Seq,X,output,hist_logp] = dream(MCMCPar,ParRange,Measurement,ModelName,Extra,option)
 
+##' @param FUN model function with first argument a vector of length ndim
+##' @param func.type. one of posterior.density, logposterior.density 
+##' @param pars a list of variable ranges
+##' @param INIT f(pars,nseq,...) returns nseq x ndim matrix of initial parameter values
+##' @param control
+##' @param measurement list N,sigma,data. must be included unless func.type=posterior.density or logposterior.density is selected
+
+##' @return ...
+##'   TODO
+##'   Sequences array n.elem*1.125 x ndim+2 x nseq
+##'   Reduced.Seq array n.elem*1.125 x ndim+2 x nseq
+##'   AR matrix n.elem x 2
+##'   outlier vector of variable length
+##'   R.stat matrix n.elem/steps x 1+ndim
+##'   CR matrix n.elem/steps x 1+length(pCR)
+  
+
 dream <- function(FUN, func.type,
                   pars = list(x = range(0, 1e6)),
-                  ...,
+                  FUN.pars=list(),
                   INIT = LHSInit,
+                  INIT.pars=list(),
                   control = list(),
                   measurement=NULL
                   )
@@ -49,10 +67,17 @@ dream <- function(FUN, func.type,
   if (is.character(FUN))
     FUN <- get(FUN, mode = "function")
   stopifnot(is.function(FUN))
-  stopifnot(is.list(par))
-  stopifnot(length(par) > 0)
+  stopifnot(is.list(pars))
+  stopifnot(length(pars) > 0)
   stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
 
+  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none"))
+
+  req.args.init <- names(formals(INIT))
+  req.args.FUN <- names(formals(FUN))
+    
+  if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars)))) stop(paste(c("INIT Missing extra arguments:",req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),sep=" "))
+  if(!all(req.args.FUN %in% c("x",names(FUN.pars)))) stop(paste(c("FUN Missing extra arguments:",req.args.FUN[!req.args.FUN %in% c("x",names(FUN.pars))]),sep=" "))
 
   pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
 
@@ -68,12 +93,13 @@ dream <- function(FUN, func.type,
          toString(names(control)[!isValid]))
 
   ## determine number of variables to be optimized
-  control$ndim<-length(par)
+  control$ndim<-length(pars)
   if (is.na(control$nseq)) control$nseq <- control$ndim
 
   NDIM <- control$ndim
-  NCR <- control$ncr
+  NCR <- control$nCR
   NSEQ <- control$nseq
+
   
   ## for each iteration...
   Iter <- NSEQ                          #? 1
@@ -112,14 +138,6 @@ dream <- function(FUN, func.type,
 ############################
   ## Initialise output object
 
-  ## dimensions:
-  ## AR matrix n.elem x 2
-  ## outlier vector of variable length
-  ## R.stat matrix n.elem/steps x 1+ndim
-  ## CR matrix n.elem/steps x 1+length(pCR)
-  ## Sequences array n.elem*1.125 x ndim+2 x nseq
-  ## Reduced.Seq array n.elem*1.125 x ndim+2 x nseq
-  
   obj <- list()
   class(obj) <- c("dream", class(obj))
   obj$call <- match.call()
@@ -149,6 +167,7 @@ dream <- function(FUN, func.type,
 
   ## Check whether will save a reduced sample
   if (control$thin){
+    iloc.2 <- 0
     Reduced.Seq <- array(NA,c(floor(n.elem/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
 
@@ -164,14 +183,16 @@ dream <- function(FUN, func.type,
 ################################
   
   ## Step 1: Sample s points in the parameter space
-  x <- INIT(pars, NSEQ,...)
+
+  x <- do.call(INIT,modifyList(INIT.pars,list(pars=pars,nseq=NSEQ)))
 
   ## make each element of pars a list and extract lower / upper
   lower <- sapply(pars, function(x) min(x[[1]]))
   upper <- sapply(pars, function(x) max(x[[1]]))
 
   ##Step 2: Calculate posterior density associated with each value in x
-  tmp<-CompDensity(x, control = control, FUN = FUN, func.type=func.type,measurement=measurement...)
+  tmp<-do.call(CompDensity,modifyList(FUN.pars,list(x=x,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
+
   ##Save the initial population, density and log density in one list X
   X<-cbind(x=x,p=tmp$p,logp=tmp$logp)
   if (!is.null(names(pars))) colnames(X) <- c(names(pars),"p","logp")
@@ -183,7 +204,7 @@ dream <- function(FUN, func.type,
 
   ##Save N_CR in memory and initialize delta.tot
   obj$CR[1,] <- c(Iter,pCR)
-  delta.tot <- rep(NA,NCR)
+  delta.tot <- rep(0,NCR)
   
   ##Save history log density of individual chains
   hist.logp[1,] <- X[,"logp"]
@@ -191,7 +212,8 @@ dream <- function(FUN, func.type,
   ##Compute R-statistic. Using coda package
   ## TODO: more elegant way of using coda. And check for correctness
   ## TODO: alternatively, convert matlab implementation
-  obj$R.stat[1,] <- c(Iter,gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i])))))
+  ##  n<10 matlab: -2 * ones(1,MCMCPar.n);
+  obj$R.stat[1,] <- c(Iter,rep(-2,NDIM))
 
 ################################
   ##Start iteration
@@ -199,36 +221,41 @@ dream <- function(FUN, func.type,
 
     for (gen.number in 1:control$steps) {
 
+      ## TODO: A logic error in CovInit, offde or CompDensity is causing everything to be rejected in metrop, even on the first iteration
+      
       ## Initialize DR properties
       new_teller <- new_teller + 1 ## counter for thinning
 
       ## Define the current locations and associated posterior densities
       x.old <- X[,1:NDIM]
-      p.old <- X[,1:(NDIM+1)]
-      logp.old <- X[,1:(NDIM+2)]
+      p.old <- X[,NDIM+1]
+      logp.old <- X[,NDIM+2]
 
       ## Now generate candidate in each sequence using current point and members of X
+      ## Table.JumpRate appears to match matlab version
       tmp <- offde(x.old, control = control,
                    CR=CR[,gen.number],
                    lower = lower, upper = upper,
                    Table.JumpRate=Table.JumpRate)
       x.new <- tmp$x.new
+      stopifnot(!identical(x.new,x.old))
       CR[,gen.number] <- tmp$CR
 
       ## Now compute the likelihood of the new points
-      tmp <- CompDensity(x.new, control = control, FUN = FUN, ...)
+      tmp<-do.call(CompDensity,modifyList(FUN.pars,list(x=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
       p.new <- tmp$p
       logp.new <- tmp$logp
 
       ## Now apply the acceptance/rejectance rule for the chain itself
       tmp <- metrop(x.new,p.new,logp.new,
                     x.old,p.old,logp.old,
-                    measurement,control
+                    func.type,control,
+                    measurement
                     )
       newgen <- tmp$newgen
       alpha12 <- tmp$alpha
       accept <- tmp$accept
-      
+      ## stopifnot(any(accept))
 
       ## NOTE: original MATLAB code had option for DR Delayed Rejection here)
       ## accept2,ItExtra not required
@@ -249,14 +276,20 @@ dream <- function(FUN, func.type,
       ## And update X using current members of Sequences
       X <- newgen; rm(newgen)
 
+      
       if (control$pCR.Update) {
         ## Calculate the standard deviation of each dimension of X
-        ## TODO: matlab syntax is unclear - seems to be elementwise?
-        r <- sd(c(X[,1:NDIM]))
+        ## TODO: matlab syntax is unclear - seems to be columnwise
+        ## element-wise: sd(c(X[,1:NDIM]))
+        r <- apply(X[,1:NDIM],2,sd)
         ## Compute the Euclidean distance between new X and old X
         delta.normX <- rowSums(((x.old-X[,1:NDIM])/r)^2)
         ## Use this information to update sum_p2 to update N_CR
         delta.tot <- CalcDelta(NCR,delta.tot,delta.normX,CR[,gen.number])
+
+        ##0s in delta.tot, delta.normX -> pCR has NaN in pCR.Update
+        stopifnot(any(delta.tot!=0) | any(delta.normX!=0))
+
       }
 
       ## Update hist.logp
@@ -273,10 +306,10 @@ dream <- function(FUN, func.type,
     ## ---------------------------------------------------------------------
 
     ## Store Important Diagnostic information -- Probability of individual crossover values
-    obj$CR[teller, ] <- pCR
+    obj$CR[teller, ] <- c(Iter,pCR)
 
     ## Do this to get rounded iteration numbers
-    if (teller == 2) steps <- steps + 1
+    if (teller == 2) control$steps <- control$steps + 1
 
     ## Check whether to update individual pCR values
     if (Iter <= 0.1 * control$ndraw) {
@@ -313,7 +346,7 @@ dream <- function(FUN, func.type,
 
     ## Calculate Gelman and Rubin convergence diagnostic
     ## Compute the R-statistic using 50% burn-in from Sequences
-    obj$R.stat <- gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i]))),autoburnin=TRUE)
+    obj$R.stat <- gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[i,1:NDIM,]))),autoburnin=TRUE)
 
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
