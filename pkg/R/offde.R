@@ -6,7 +6,7 @@
 ##' @param lower see handleBounds
 ##' @param upper see handleBounds
 ##' @param Table.JumpRate. defined in dream. matrix ndim x DEpairs. range (0,~1.683]
-##' @return ...
+##' @return list with elments
 ##   x.new, CR. same dim and range as input
 ##
 ## depends:
@@ -85,7 +85,7 @@ offde<-function(x.old,control,CR,
       
       ## Then fill update the dimension
       delta.x[qq,i] <- (1+noise.x[qq,i])*JumpRate*delta[i]
-      
+
     } else {
       ## Set the JumpRate to 1 and overwrite CR and DEversion
       JumpRate <- 1
@@ -96,16 +96,17 @@ offde<-function(x.old,control,CR,
                        
       ## Now jumprate to facilitate jumping from one mode to the other in all dimensions
       delta.x[qq,] <- JumpRate*delta
-      
-      ## Avoid that jump = 0 and xnew is similar to xold
-      if (sum(delta.x[qq,]^2)==0){
-        ## Compute the Cholesky Decomposition of x.old
-        R <- (2.38/sqrt(nseq))*chol(cov(x.old)+1e-5*diag(ndim))
+    }##runif
+    
+    ## Avoid that jump = 0 and xnew is similar to xold
+    if (sum(delta.x[qq,]^2)==0){
+      ## Compute the Cholesky Decomposition of x.old
+      R <- (2.38/sqrt(nseq))*chol(cov(x.old)+1e-5*diag(ndim))
         
-        ## Generate jump using multinormal distribution
-        delta.x[qq,] <- c( rnorm(ndim) %*% R )
-      }
-    }#runif
+      ## Generate jump using multinormal distribution
+      delta.x[qq,] <- c( rnorm(ndim) %*% R )
+    }
+
   }#for qq
   
   ## TODO?:

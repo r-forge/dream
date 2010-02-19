@@ -255,7 +255,7 @@ dream <- function(FUN, func.type,
       newgen <- tmp$newgen
       alpha12 <- tmp$alpha
       accept <- tmp$accept
-      ## stopifnot(any(accept))
+      ## stopifnot(any(accept)) #Unlikely, but possible
 
       ## NOTE: original MATLAB code had option for DR Delayed Rejection here)
       ## accept2,ItExtra not required
@@ -288,7 +288,7 @@ dream <- function(FUN, func.type,
         delta.tot <- CalcDelta(NCR,delta.tot,delta.normX,CR[,gen.number])
 
         ##0s in delta.tot, delta.normX -> pCR has NaN in pCR.Update
-        stopifnot(any(delta.tot!=0) | any(delta.normX!=0))
+        stopifnot(any(delta.tot!=0) | any(delta.normX!=0)) 
 
       }
 
@@ -327,13 +327,13 @@ dream <- function(FUN, func.type,
         ## Draw random other chain -- cannot be the same as current chain
         r.idx <- which.max(tmp$mean.hist.logp)
         ## Added -- update hist_logp -- chain will not be considered as an outlier chain then
-        hist.logp[1:(counter-1),out.id] <- hist.logp[,r.idx]
+        hist.logp[1:(counter-1),out.id] <- hist.logp[1:(counter-1),r.idx]
         ## Jump outlier chain to r_idx -- Sequences
         Sequences[iloc,1:(NSEQ+2),out.id] <- X[r.idx,]
         ## Jump outlier chain to r_idx -- X
         X[out.id,1:(NSEQ+2)] <- X[r.idx,]
         ## Add to chainoutlier
-        outlier <- rbind(outlier,c(Iter,out.id))
+        obj$outlier <- rbind(obj$outlier,c(Iter,out.id))
       } ##for remove outliers
     }   ##else
 
@@ -346,7 +346,7 @@ dream <- function(FUN, func.type,
 
     ## Calculate Gelman and Rubin convergence diagnostic
     ## Compute the R-statistic using 50% burn-in from Sequences
-    obj$R.stat <- gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[i,1:NDIM,]))),autoburnin=TRUE)
+    obj$R.stat[teller,] <- c(Iter,gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[i,1:NDIM,]))),autoburnin=TRUE)$psrf[,1])
 
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
@@ -360,26 +360,30 @@ dream <- function(FUN, func.type,
     teller = teller + 1
   } ##while
 
+
+  obj$Sequences <- obj$Sequences
+  obj$Reduced.Seq <- obj$Reduced.Seq
+  
   ## Postprocess output from DREAM before returning arguments
   ## Remove extra rows from Sequences
   i <- which(rowSums(Sequences[,,1])==0)
   if (length(i)>0) {
     i <- i[1]-1
-    obj$Sequences <- Sequences[1:i,,]
+    obj$Sequences <- obj$Sequences[1:i,,]
   }
   ## Remove extra rows from Reduced.Seq
   if (control$thin){
-    i <- which(rowSums(Reduced.Seq)==0)
+    i <- which(rowSums(Reduced.Seq[,,1])==0)
     if (length(i)>0) {
       i <- i[1]-1
-      obj$Reduced.Seq <- Reduced.Seq[1:i,,]
+      obj$Reduced.Seq <- obj$Reduced.Seq[1:i,,]
     }
   }
   ##Remove extra rows R.stat
-  i <- which(rowSums(obj$R.stat[,,1])==0)
+  i <- which(is.na(rowSums(obj$R.stat)))
   if (length(i)>0) {
     i <- i[1]-1
-    obj$R.stat <- obj$R.stat[1:i,,]
+    obj$R.stat <- obj$R.stat[1:i,]
   }
   ##Remove extra rows AR
   i <- which(rowSums(obj$AR)==0)

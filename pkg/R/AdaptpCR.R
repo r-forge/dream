@@ -10,7 +10,7 @@
 ##'   lCR vector of length nCR
 AdaptpCR <- function(CR,delta.tot,lCR.old,control){
 
-  stopifnot(sum(delta.tot)>0)
+  ##stopifnot(sum(delta.tot)>0)
   
   ## dimensions:
   ##  CR vector of length nseq*steps

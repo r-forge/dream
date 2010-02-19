@@ -17,6 +17,11 @@ CovInit <- function(pars,nseq,muX,qcov,bound.handling)
 {
 
   ##[x] = repmat(Extra.muX,MCMCPar.seq,1) + randn(MCMCPar.seq,MCMCPar.n) * chol(Extra.qcov);
+
+  ## Components verified to match matlab
+  ## print(t(matrix(rep(muX,nseq),length(muX))))
+  ## print(chol(qcov))
+  
   x <- t(matrix(rep(muX,nseq),length(muX)))+randn(nseq,length(pars)) %*% chol(qcov)
   
   lower <- sapply(pars, function(x) min(x[[1]]))

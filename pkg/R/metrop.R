@@ -18,7 +18,6 @@
 ##'   newgen matrix nseq x ndim+2 (same as X in dream.R)
 ##'   alpha scalar probability of acceptance. range [0,1]
 ##'   accept vector indicating whether each sequences was accepted. length nseq
-##  TODO: names for control$metrop.opt.
 metrop<-function(x,p.x,logp.x,
                  x.old,p.old,logp.old,
                  func.type,control,
@@ -45,20 +44,20 @@ metrop<-function(x,p.x,logp.x,
   
   switch(func.type,
          posterior.density = {
-           alpha <- min(p.x/p.old,1)
+           alpha <- pmin(p.x/p.old,1)
          },
          calc.loglik = { ## Lnp probability evaluation
-           alpha <- min(exp(p.x-p.old),1)
+           alpha <- pmin(exp(p.x-p.old),1)
          },
          calc.rmse = { ## SSE probability evaluation
-           alpha <- min((p.x/p.old)^(-measurement$N*(1+control$gamma)/2),1)
+           alpha <- pmin((p.x/p.old)^(-measurement$N*(1+control$gamma)/2),1)
          },
          logposterior.density = { ## Lnp probability evaluation
-           alpha <- min(exp(p.x-p.old),1)
+           alpha <- pmin(exp(p.x-p.old),1)
          },
          calc.weighted.rmse = { ## Similar to 3 but now weighted with Measurement.Sigma
            ## signs are different because we write -SSR
-           alpha <- min(exp(-0.5*(-p.x + p.old)/measurement$sigma^2),1);
+           alpha <- pmin(exp(-0.5*(-p.x + p.old)/measurement$sigma^2),1);
          },
          stop("Unrecognised value of control$metrop.opt")
          )
@@ -66,7 +65,7 @@ metrop<-function(x,p.x,logp.x,
   ## Generate random numbers
   Z <- runif(nr.chains)
   ## Find which alpha's are greater than Z
-  idx <- which(Z<alpha)
+  idx <- which(alpha>Z)
 
   ##stopifnot(length(idx)>0) ##Unlikely, but possible
   

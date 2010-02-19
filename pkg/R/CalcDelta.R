@@ -8,7 +8,7 @@
 ##' @return delta.tot vector of length nCR
 CalcDelta <- function(nCR,delta.tot,delta.normX,CR){
 
-  stopifnot(sum(delta.tot)>0 || sum(delta.normX)>0)
+  ##stopifnot(sum(delta.tot)>0 || sum(delta.normX)>0)
   
   ## Dimensions:
   ##  zz. iter 1:nCR
@@ -25,6 +25,6 @@ CalcDelta <- function(nCR,delta.tot,delta.normX,CR){
     
   } ## for CRs
 
-  stopifnot(!any(is.na(delta.tot)) && sum(delta.tot)>0)
+  ##stopifnot(!any(is.na(delta.tot)) && sum(delta.tot)>0)
   return(delta.tot)
 } ##CalcDelta
