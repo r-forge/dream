@@ -4,15 +4,15 @@ dreamDefaults <- function()
     list(nseq = NA,              ## Number of Markov Chains / sequences (defaults to N)
          nCR = 3,                ## Crossover values used to generate proposals (geometric series)
          gamma = 0,              ## Kurtosis parameter Bayesian Inference Scheme
-         DEpairs = 3,            ## Number of DEpairs
+         DEpairs = 3,            ## Number of DEpairs. <=nseq-1 TODO: check
          steps = 10,             ## Number of steps in sem
          eps = 5e-2,             ## Random error for ergodicity
          outlierTest = 'IQR_test', ## What kind of test to detect outlier chains?
          pCR.Update = TRUE,      ## Adaptive tuning of crossover values
          boundHandling = 'reflect', ## Boundary handling: "reflect", "bound", "fold", "none"
-         ndraw = Inf,            ## maximum number of iterations
-         maxeval = Inf,          ## maximum number of function evaluations
-         maxtime = 60,           ## maximum duration of optimization in seconds
+         ndraw = Inf,            ## maximum number of function evaluations
+         maxtime = Inf,           ## maximum duration of optimization in seconds
+         Rthres=1.1,            ## R value at which to stop
          trace = 0,              ## level of user feedback
          REPORT = 10,            ## number of iterations between reports when trace >= 1
          thin=FALSE,             ## do reduced sample collection
@@ -25,6 +25,8 @@ library(coda)
 ## MATLAB function:
 ## function [Sequences,Reduced_Seq,X,output,hist_logp] = dream(MCMCPar,ParRange,Measurement,ModelName,Extra,option)
 
+
+
 ##' @param FUN model function with first argument a vector of length ndim
 ##' @param func.type. one of posterior.density, logposterior.density 
 ##' @param pars a list of variable ranges
@@ -34,13 +36,16 @@ library(coda)
 
 ##' @return ...
 ##'   TODO
-##'   Sequences array n.elem*1.125 x ndim+2 x nseq
-##'   Reduced.Seq array n.elem*1.125 x ndim+2 x nseq
-##'   AR matrix n.elem x 2
+##'   X converged nseq points in parameter space. matrix nseq x ndim
+##'   Sequences mcmc.list object. nseq mcmc elements of ndim variables
+##'   Reduced.Seq mcmc.list object. nseq mcmc elements of ndim variables
+##'   AR acceptance rate for each draw. matrix n.elem x 2
 ##'   outlier vector of variable length
-##'   R.stat matrix n.elem/steps x 1+ndim
-##'   CR matrix n.elem/steps x 1+length(pCR)
-  
+##'   R.stat Gelman.Diag statistic for each variable at each step. matrix n.elem/steps x 1+ndim
+##'   CR. Probability of crossover. matrix n.elem/steps x 1+length(pCR)
+##'
+
+##' Terminates either when control$ndraw or control$maxtime is reached
 
 dream <- function(FUN, func.type,
                   pars = list(x = range(0, 1e6)),
@@ -54,7 +59,6 @@ dream <- function(FUN, func.type,
 
   
   ## dimensions
-  ##  x points in parameter space. matrix nseq x ndim
   ##  hist.logp matrix. ndraw/nseq x nseq. length nearly ndraw.
   ##    TODO: removed Iter for simplicity. should have been kept?
   ##  CR nseq x steps
@@ -63,9 +67,16 @@ dream <- function(FUN, func.type,
   ##  Table.JumpRate ndim x DEpairs. range (0,~1.683]
   ##  delta.tot vector of length nCR
 
+  ## Sequences. array n.elem*1.125 x ndim+2 x nseq
+  ## Reduced.Seq array n.elem*1.125 x ndim+2 x nseq
+
+  ##  teller [2,ndraw/nseq]
+  ## Iter [nseq,ndraw(+steps*nseq)],
+  ## counter [2,ndraw/nseq]
+  ## iloc
+
   
-  if (is.character(FUN))
-    FUN <- get(FUN, mode = "function")
+  if (is.character(FUN))  FUN <- get(FUN, mode = "function")
   stopifnot(is.function(FUN))
   stopifnot(is.list(pars))
   stopifnot(length(pars) > 0)
@@ -99,7 +110,6 @@ dream <- function(FUN, func.type,
   NDIM <- control$ndim
   NCR <- control$nCR
   NSEQ <- control$nseq
-
   
   ## for each iteration...
   Iter <- NSEQ                          #? 1
@@ -147,19 +157,20 @@ dream <- function(FUN, func.type,
   EXITMSG <- NULL
 
   ## Derive the number of elements in the output file
+  ## Number of times through while loop
   n.elem<-floor(control$ndraw/NSEQ)+1
 
   ## Iter + AR at each step
   obj$AR<-matrix(NA,n.elem,2)
-  obj$AR[1,1]<-NSEQ-1
+  obj$AR[1,2]<-NSEQ-1 ##Number if only one rejected
   
-  obj$outlier<-NULL
-
   ##Iter + R statistic for each variable at each step
-  obj$R.stat<-matrix(NA,floor(n.elem/control$steps),NDIM+1)
+  obj$R.stat<-matrix(NA,ceiling(n.elem/control$steps),NDIM+1)
   
   ##Iter + pCR for each CR
-  obj$CR <- matrix(NA,floor(n.elem/control$steps),length(pCR)+1)
+  obj$CR <- matrix(NA,ceiling(n.elem/control$steps),length(pCR)+1)
+
+  obj$outlier<-NULL
   
   Sequences <- array(NA, c(floor(1.25*n.elem),NDIM+2,NSEQ))
   if (!is.null(names(pars))) colnames(Sequences) <- c(names(pars),"p","logp")
@@ -221,8 +232,6 @@ dream <- function(FUN, func.type,
 
     for (gen.number in 1:control$steps) {
 
-      ## TODO: A logic error in CovInit, offde or CompDensity is causing everything to be rejected in metrop, even on the first iteration
-      
       ## Initialize DR properties
       new_teller <- new_teller + 1 ## counter for thinning
 
@@ -295,10 +304,10 @@ dream <- function(FUN, func.type,
       ## Update hist.logp
       hist.logp[counter,] <- X[,NDIM+2]
       
-      ## Save some important output -- Acceptance Rate
-      obj$AR[counter] <- 100 * sum(accept) / NSEQ
+      ## Save Acceptance Rate
+      obj$AR[counter,] <- c(Iter,100 * sum(accept) / NSEQ)
 
-      ## Update Iteration and counter
+      ## CompDensity executes function NSEQ times per loop
       Iter <- Iter + NSEQ
       counter <- counter + 1
     } ##for gen.number steps
@@ -329,9 +338,9 @@ dream <- function(FUN, func.type,
         ## Added -- update hist_logp -- chain will not be considered as an outlier chain then
         hist.logp[1:(counter-1),out.id] <- hist.logp[1:(counter-1),r.idx]
         ## Jump outlier chain to r_idx -- Sequences
-        Sequences[iloc,1:(NSEQ+2),out.id] <- X[r.idx,]
+        Sequences[iloc,1:(NDIM+2),out.id] <- X[r.idx,]
         ## Jump outlier chain to r_idx -- X
-        X[out.id,1:(NSEQ+2)] <- X[r.idx,]
+        X[out.id,1:(NDIM+2)] <- X[r.idx,]
         ## Add to chainoutlier
         obj$outlier <- rbind(obj$outlier,c(Iter,out.id))
       } ##for remove outliers
@@ -346,63 +355,55 @@ dream <- function(FUN, func.type,
 
     ## Calculate Gelman and Rubin convergence diagnostic
     ## Compute the R-statistic using 50% burn-in from Sequences
-    obj$R.stat[teller,] <- c(Iter,gelman.diag(as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[i,1:NDIM,]))),autoburnin=TRUE)$psrf[,1])
-
+    try(
+             obj$R.stat[teller,] <- c(Iter,gelman.diag(
+                   as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i]))),
+                                              autoburnin=TRUE)$psrf[,1])
+        )
+    if (!is.na(obj$R.stat[teller,1]) && all(obj$R.stat[teller,-1]<control$Rthres)) {
+      obj$EXITMSG <- 'Convergence criteria reached'
+     ## obj$EXITFLAG <- 3
+    }
+      
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
     if (toc > control$maxtime) {
-      EXITMSG <- 'Exceeded maximum time.'
-      EXITFLAG <- 2
+      obj$EXITMSG <- 'Exceeded maximum time.'
+      obj$EXITFLAG <- 2
       break
     }
 
     ## Update the teller
     teller = teller + 1
   } ##while
-
-
-  obj$Sequences <- obj$Sequences
-  obj$Reduced.Seq <- obj$Reduced.Seq
   
-  ## Postprocess output from DREAM before returning arguments
-  ## Remove extra rows from Sequences
-  i <- which(rowSums(Sequences[,,1])==0)
-  if (length(i)>0) {
-    i <- i[1]-1
-    obj$Sequences <- obj$Sequences[1:i,,]
+  if (Iter>= control$ndraw){
+    obj$EXITMSG <- "Maximum function evaluations reached"
+   ## obj$EXITFLAG <- 4
   }
-  ## Remove extra rows from Reduced.Seq
+
+  obj$X <- X
+
+  ## Trim outputs to collected data - remove extra rows
+  ## Convert sequences to mcmc objects
+  Sequences <- Sequences[1:iloc,,]
+  obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
   if (control$thin){
-    i <- which(rowSums(Reduced.Seq[,,1])==0)
-    if (length(i)>0) {
-      i <- i[1]-1
-      obj$Reduced.Seq <- obj$Reduced.Seq[1:i,,]
-    }
+    Reduced.Seq <- Reduced.Seq[1:iloc.2,,]
+    obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ,function(i) mcmc(
+                                                               Reduced.Seq[,1:NDIM,i],
+                                                                   start=1,
+                                                                   end=iloc,
+                                                                   thin=control$thin.t)
+                                           ))
   }
-  ##Remove extra rows R.stat
-  i <- which(is.na(rowSums(obj$R.stat)))
-  if (length(i)>0) {
-    i <- i[1]-1
-    obj$R.stat <- obj$R.stat[1:i,]
-  }
-  ##Remove extra rows AR
-  i <- which(rowSums(obj$AR)==0)
-  if (length(i)>0) {
-    i <- i[1]-1
-    obj$AR <- obj$AR[1:i,]
-  }
-  ## Remove extra rows from CR
-  i <- which(rowSums(obj$CR)==0)
-  if (length(i)>0) {
-    i <- i[1]-1
-    obj$CR <- obj$CR[1:i,]
-  }
+  obj$R.stat <- obj$R.stat[1:(teller-1),]
+  obj$AR <- obj$AR[1:(counter-1),]
+  obj$CR <- obj$CR[1:(teller-1),]
   
   ## store number of function evaluations
-  ## TODO: funevals is not calculated atm
-  ## obj$counts <- funevals
   ## store number of iterations
-  obj$iterations <- i
+  obj$fun.evals <- Iter
   ## store the amount of time taken
   obj$time <- toc
 
