@@ -1,38 +1,41 @@
 
 
 dreamDefaults <- function()
-    list(nseq = NA,              ## Number of Markov Chains / sequences (defaults to N)
+    list(
          nCR = 3,                ## Crossover values used to generate proposals (geometric series)
          gamma = 0,              ## Kurtosis parameter Bayesian Inference Scheme
-         DEpairs = 3,            ## Number of DEpairs. <=nseq-1 TODO: check
          steps = 10,             ## Number of steps in sem
          eps = 5e-2,             ## Random error for ergodicity
          outlierTest = 'IQR_test', ## What kind of test to detect outlier chains?
          pCR.Update = TRUE,      ## Adaptive tuning of crossover values
          boundHandling = 'reflect', ## Boundary handling: "reflect", "bound", "fold", "none"
-         ndraw = Inf,            ## maximum number of function evaluations
+##Termination criteria. TODO: are the 2nd two valid, given that ndraw is used in adaptive pcr
+         ndraw = 1e5,            ## maximum number of function evaluations
          maxtime = Inf,           ## maximum duration of optimization in seconds
-         Rthres=1.1,            ## R value at which to stop
-         trace = 0,              ## level of user feedback
-         REPORT = 10,            ## number of iterations between reports when trace >= 1
+         Rthres=1.01,            ## R value at which to stop. 
+## Thinning
          thin=FALSE,             ## do reduced sample collection
-         thin.t=NA,               ## parameter for reduced sample collection
-	   ndim=NA ## number of parameters (automatically set from length of pars)
+          thin.t=NA,            ## parameter for reduced sample collection
+## Parameters with auto-set values
+	   ndim=NA,			 ## number of parameters (automatically set from length of pars)
+         DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
+	   nseq = NA,              ## Number of Markov Chains / sequences (defaults to N)
+## Currently unused parameters
+         trace = 0,              ## level of user feedback
+         REPORT = 10            ## number of iterations between reports when trace >= 1
          )            
 
 library(coda)
 
-## MATLAB function:
-## function [Sequences,Reduced_Seq,X,output,hist_logp] = dream(MCMCPar,ParRange,Measurement,ModelName,Extra,option)
 
 
-
-##' @param FUN model function with first argument a vector of length ndim
+##' @param FUN model function with first argument a vector of parameter values of length ndim
 ##' @param func.type. one of posterior.density, logposterior.density 
 ##' @param pars a list of variable ranges
 ##' @param INIT f(pars,nseq,...) returns nseq x ndim matrix of initial parameter values
 ##' @param control
-##' @param measurement list N,sigma,data. must be included unless func.type=posterior.density or logposterior.density is selected
+##' @param measurement list. must be included unless func.type=posterior.density or logposterior.density is selected
+##'  for calc.rmse: must have element data
 
 ##' @return ...
 ##'   TODO
@@ -46,6 +49,9 @@ library(coda)
 ##'
 
 ##' Terminates either when control$ndraw or control$maxtime is reached
+##'
+##' MATLAB function:
+##' function [Sequences,Reduced_Seq,X,output,hist_logp] = dream(MCMCPar,ParRange,Measurement,ModelName,Extra,option)
 
 dream <- function(FUN, func.type,
                   pars = list(x = range(0, 1e6)),
@@ -75,26 +81,26 @@ dream <- function(FUN, func.type,
   ## counter [2,ndraw/nseq]
   ## iloc
 
-  
+############################
+  ## Process parameters
+
   if (is.character(FUN))  FUN <- get(FUN, mode = "function")
   stopifnot(is.function(FUN))
   stopifnot(is.list(pars))
   stopifnot(length(pars) > 0)
   stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
-
+  stopifnot(func.type!="calc.rmse" || "data" %in% names(measurement))
+  
   stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none"))
 
   req.args.init <- names(formals(INIT))
   req.args.FUN <- names(formals(FUN))
     
   if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars)))) stop(paste(c("INIT Missing extra arguments:",req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),sep=" "))
-  if(!all(req.args.FUN %in% c("x",names(FUN.pars)))) stop(paste(c("FUN Missing extra arguments:",req.args.FUN[!req.args.FUN %in% c("x",names(FUN.pars))]),sep=" "))
-
+  if(!all(req.args.FUN[2:length(req.args.FUN)] %in% c(names(FUN.pars)))) stop(paste(c("FUN Missing extra arguments:",req.args.FUN[!req.args.FUN %in% c("x",names(FUN.pars))]),sep=" "))
+ 
   pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
 
-############################
-  ## Initialize variables
-  
   ## update default options with supplied options
   stopifnot(is.list(control))
   control <- modifyList(dreamDefaults(), control)
@@ -106,6 +112,15 @@ dream <- function(FUN, func.type,
   ## determine number of variables to be optimized
   control$ndim<-length(pars)
   if (is.na(control$nseq)) control$nseq <- control$ndim
+  if (is.na(control$DEpairs)) control$DEpairs <- floor((control$nseq-1)/2)
+
+  stopifnot(control$DEpairs<=(control$nseq-1)/2) ## Requirement of offde
+            
+  if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
+
+  
+############################
+  ## Initialize variables
 
   NDIM <- control$ndim
   NCR <- control$nCR
@@ -202,7 +217,7 @@ dream <- function(FUN, func.type,
   upper <- sapply(pars, function(x) max(x[[1]]))
 
   ##Step 2: Calculate posterior density associated with each value in x
-  tmp<-do.call(CompDensity,modifyList(FUN.pars,list(x=x,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
+  tmp<-do.call(CompDensity,modifyList(FUN.pars,list(pars=x,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
 
   ##Save the initial population, density and log density in one list X
   X<-cbind(x=x,p=tmp$p,logp=tmp$logp)
@@ -251,7 +266,7 @@ dream <- function(FUN, func.type,
       CR[,gen.number] <- tmp$CR
 
       ## Now compute the likelihood of the new points
-      tmp<-do.call(CompDensity,modifyList(FUN.pars,list(x=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
+      tmp<-do.call(CompDensity,modifyList(FUN.pars,list(pars=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
       p.new <- tmp$p
       logp.new <- tmp$logp
 
@@ -360,8 +375,15 @@ dream <- function(FUN, func.type,
                    as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i]))),
                                               autoburnin=TRUE)$psrf[,1])
         )
-    if (!is.na(obj$R.stat[teller,1]) && all(obj$R.stat[teller,-1]<control$Rthres)) {
+
+    ## Update the teller
+    teller = teller + 1
+
+    ##Additional Exit conditions
+    
+    if (all(!is.na(obj$R.stat[teller-1,])) && all(obj$R.stat[teller-1,-1]<control$Rthres)) {
       obj$EXITMSG <- 'Convergence criteria reached'
+      break
      ## obj$EXITFLAG <- 3
     }
       
@@ -373,9 +395,9 @@ dream <- function(FUN, func.type,
       break
     }
 
-    ## Update the teller
-    teller = teller + 1
   } ##while
+
+  toc <- as.numeric(Sys.time()) - tic
   
   if (Iter>= control$ndraw){
     obj$EXITMSG <- "Maximum function evaluations reached"
@@ -397,6 +419,7 @@ dream <- function(FUN, func.type,
                                                                    thin=control$thin.t)
                                            ))
   }
+
   obj$R.stat <- obj$R.stat[1:(teller-1),]
   obj$AR <- obj$AR[1:(counter-1),]
   obj$CR <- obj$CR[1:(teller-1),]

@@ -1,6 +1,6 @@
-##' Computes the density of each x value
+##' Computes the density of each pars value
 ##'
-##' @param x matrix nseq x ndim
+##' @param pars matrix nseq x ndim
 ##' @param control. list containing gamma,Wb,Cb,nseq
 ##' @param FUN - the model to run
 ##'   R function with first argument a vector of length ndim.
@@ -20,11 +20,11 @@
 ## TODO: p may be erroneously equal to logp?
 ## TODO: more appropriate naming of options?
 ## TODO: allow shortenings of option?
-CompDensity <- function(x,control,FUN,func.type,
+CompDensity <- function(pars,control,FUN,func.type,
                         measurement=NULL,...){
 
   stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
-  stopifnot(!any(is.na(x)))
+  stopifnot(!any(is.na(pars)))
   
   ## dimensions:
   ##  i. iter 1:nseq
@@ -36,10 +36,10 @@ CompDensity <- function(x,control,FUN,func.type,
   logp <- rep(NA,control$nseq)
   
   ## Sequential evaluation
-  for (ii in 1:nrow(x)){
+  for (ii in 1:nrow(pars)){
     ## Call model to generate simulated data
     ## TODO: correct use of optional pars?
-    modpred <- FUN(x[ii,],...)
+    modpred <- FUN(pars[ii,],...)
 
     switch(func.type,
            ## Model directly computes posterior density
@@ -76,7 +76,7 @@ CompDensity <- function(x,control,FUN,func.type,
              logp[ii] <- modpred
            },
            ## Similar as 3, but now weights with the Measurement Sigma
-           ## TODO: appears to be no difference to calc.rmse
+           ## TODO: identical to rmse because difference is in metrop
            calc.weighted.rmse={
              ## Define the error
              err <- measurement$data-modpred

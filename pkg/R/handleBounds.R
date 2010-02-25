@@ -17,6 +17,7 @@ handleBounds <- function(x, lower, upper, bound.handling)
     too.high<-which(x[,p]>upper[p])
     switch(bound.handling,
            reflect = {
+             ## TODO: may still violate bounds if x>2*upper
              x[too.low,p] <- 2*lower[p]-x[too.low,p]
              x[too.high,p] <- 2*upper[p]-x[too.high,p]
            },
@@ -26,6 +27,7 @@ handleBounds <- function(x, lower, upper, bound.handling)
            },
            fold = {
              ## ------- New approach that maintains detailed balance ----------
+             ## TODO: may still violate bounds if x>2*upper
              x[too.low,p] <- upper[p]-(lower[p]-x[too.low,p])
              too.high<-which(x[,p]>upper[p])
              x[too.high,p] <- lower[p]+(x[too.high,p]-upper[p])
@@ -36,7 +38,11 @@ handleBounds <- function(x, lower, upper, bound.handling)
            },
            stop("Unrecognised value of 'bound.handling'")
            )#switch
-    if (bound.handling!="none") stopifnot(all(x[,p]>=lower[p] & x[,p]<=upper[p]))
+    ##if (bound.handling!="none") stopifnot(all(x[,p]>=lower[p] & x[,p]<=upper[p]))
+    if (bound.handling!="none" && !all(x[,p]>=lower[p] & x[,p]<=upper[p])) {
+      warning("Bounds violated after correction, using random")
+      x <- handleBounds(x,lower,upper,"rand")
+    }
   } ##for p
   return(x)
 }#handleBounds
