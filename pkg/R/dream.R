@@ -19,10 +19,10 @@ dreamDefaults <- function()
 ## Parameters with auto-set values
 	   ndim=NA,			 ## number of parameters (automatically set from length of pars)
          DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
-	   nseq = NA,              ## Number of Markov Chains / sequences (defaults to N)
+	   nseq = NA              ## Number of Markov Chains / sequences (defaults to N)
 ## Currently unused parameters
-         trace = 0,              ## level of user feedback
-         REPORT = 10            ## number of iterations between reports when trace >= 1
+##         trace = 0,              ## level of user feedback
+##         REPORT = 10            ## number of iterations between reports when trace >= 1
          )            
 
 library(coda)
@@ -30,7 +30,8 @@ library(coda)
 
 
 ##' @param FUN model function with first argument a vector of parameter values of length ndim
-##' @param func.type. one of posterior.density, logposterior.density 
+##' @param func.type type of value FUN returns.
+##'  one of: posterior.density, logposterior.density,calc.loglik,calc.rmse,calc.weighted.rmse
 ##' @param pars a list of variable ranges
 ##' @param INIT f(pars,nseq,...) returns nseq x ndim matrix of initial parameter values
 ##' @param control
@@ -109,6 +110,11 @@ dream <- function(FUN, func.type,
     stop("unrecognised options: ",
          toString(names(control)[!isValid]))
 
+  if (!is.null("measurement")){
+    if (! "sigma" %in% names(measurement)) measurement$sigma <- sd(measurement$data)
+    if (! "N" %in% names(measurement)) measurement$N <- length(measurement$data)
+  }
+  
   ## determine number of variables to be optimized
   control$ndim<-length(pars)
   if (is.na(control$nseq)) control$nseq <- control$ndim
@@ -135,8 +141,8 @@ dream <- function(FUN, func.type,
   
   ## Calculate the parameters in the exponential power density function of Box and Tiao (1973)
   cbwb <- CalcCbWb(control$gamma)
-  control$Cb <- cbwb$cb
-  control$Wb <- cbwb$wb
+  control$Cb <- cbwb$Cb
+  control$Wb <- cbwb$Wb
 
   ## Generate the Table with JumpRates (dependent on number of dimensions and number of pairs)
   Table.JumpRate<-matrix(NA,NDIM,control$DEpairs)
@@ -178,12 +184,16 @@ dream <- function(FUN, func.type,
   ## Iter + AR at each step
   obj$AR<-matrix(NA,n.elem,2)
   obj$AR[1,2]<-NSEQ-1 ##Number if only one rejected
+  colnames(obj$AR) <- c("fun.evals","AR")
   
   ##Iter + R statistic for each variable at each step
   obj$R.stat<-matrix(NA,ceiling(n.elem/control$steps),NDIM+1)
+  if (!is.null(names(pars))) colnames(obj$R.stat) <- c("fun.evals",names(pars))
+  else   colnames(obj$R.stat) <- c("fun.evals",paste("p",1:length(pars),sep=""))
   
   ##Iter + pCR for each CR
   obj$CR <- matrix(NA,ceiling(n.elem/control$steps),length(pCR)+1)
+  colnames(obj$CR) <- c("fun.evals",paste("CR",1:length(pCR),sep=""))
 
   obj$outlier<-NULL
   

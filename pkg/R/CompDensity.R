@@ -51,11 +51,8 @@ CompDensity <- function(pars,control,FUN,func.type,
            calc.loglik={
              err <- measurement$data-modpred
                  
-             ## Compute the number of measurement data
-             N <- length(measurement$data)
-             
              ## Derive the log likelihood
-             logp[ii] <- N*log(control$Wb/measurement$sigma)-
+             logp[ii] <- measurement$N*log(control$Wb/measurement$sigma)-
                control$Cb*(sum((abs(err/measurement$sigma))^(2/(1+control$gamma))))
              ## And retain in memory
              p[ii] <- logp[ii]

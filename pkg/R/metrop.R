@@ -50,7 +50,7 @@ metrop<-function(x,p.x,logp.x,
            alpha <- pmin(exp(p.x-p.old),1)
          },
          calc.rmse = { ## SSE probability evaluation
-           alpha <- pmin((p.x/p.old)^(-length(measurement$data)*(1+control$gamma)/2),1)
+           alpha <- pmin((p.x/p.old)^(-measurement$N*(1+control$gamma)/2),1)
          },
          logposterior.density = { ## Lnp probability evaluation
            alpha <- pmin(exp(p.x-p.old),1)
@@ -59,7 +59,7 @@ metrop<-function(x,p.x,logp.x,
            ## signs are different because we write -SSR
            alpha <- pmin(exp(-0.5*(-p.x + p.old)/measurement$sigma^2),1);
          },
-         stop("Unrecognised value of control$metrop.opt")
+         stop("Unrecognised value of func.type")
          )
   
   ## Generate random numbers

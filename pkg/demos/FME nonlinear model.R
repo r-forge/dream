@@ -16,11 +16,7 @@ Obs2<- data.frame(x=c(   20,  55,   83,  110,  138,  240,  325),   # mg COD/l
                    y=c(0.05,0.07,0.09,0.10,0.11,0.122,0.125))   # 1/hour
 obs.all <- rbind(Obs,Obs2)
 
-Model <- function(p,x) return(data.frame(x=x,y=p[1]*x/(x+p[2])))
-##Model(c(0.1,1),obs.all$x)
-
 Model.y <- function(p,x) p[1]*x/(x+p[2])
-
 
 control <- list(
                 nseq=5,
@@ -33,7 +29,8 @@ control <- list(
                 pCR.Update=TRUE,
                 thin=TRUE,
                 thin.t=10,
-                boundHandling="fold"
+                boundHandling="fold",
+                Rthres=1+1e-3
                 )
 
 pars <- list(p1=c(0,1),p2=c(0,100))
@@ -49,27 +46,21 @@ dd <- dream(
             control = control
             )
 
-cat(sprintf("
-Exit message:  %s
-Num fun evals: %d
-Time (secs):   %.1f
-",
-            dd$EXITMSG,
-            dd$fun.evals,
-            dd$time
-            ))
-tail(dd$R.stat,1)
-maxLikPars(window(dd$Sequences, start = 0.75*end(dd$Sequences) + 1))
+dd
 
-ss <- window(dd$Sequences, start = end(dd$Sequences)/2 + 1)
-pars.maxp <- maxLikPars(ss)
-print(pars.maxp)
+summary(dd)
 
-plot(ss)
-gelman.plot(ss)
+coef(dd)
+
+plot(dd)
 
 
-### FME
+
+### Comparison to FME results
+
+Model <- function(p,x) return(data.frame(x=x,y=p[1]*x/(x+p[2])))
+##Model(c(0.1,1),obs.all$x)
+
 
 library(FME)
 Residuals  <- function(p) {
@@ -89,4 +80,4 @@ print(P$par)
 plot(Obs,xlab="mg COD/l",ylab="1/hour", pch=16, cex=1.5)
 points(Obs2,pch=18,cex=1.5, col="red")
 lines(Model(p=P$par,x=0:375))
-lines(Model(p=pars.maxp,x=0:375),col="green")
+lines(Model(p=coef(dd),x=0:375),col="green")
