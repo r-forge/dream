@@ -23,7 +23,9 @@
 CompDensity <- function(pars,control,FUN,func.type,
                         measurement=NULL,...){
 
-  stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
+  ## Should be guaranteed by dream
+  ## stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
+  
   stopifnot(!any(is.na(pars)))
   
   ## dimensions:
@@ -86,6 +88,6 @@ CompDensity <- function(pars,control,FUN,func.type,
   }           ## for rows
 
   stopifnot(!any(is.na(p)))
-  stopifnot(!any(is.na(logp)))
+  ##stopifnot(!any(is.na(logp))) ##Not used anyway
   return(list(p=p,logp=logp))
 } ##CompDensity

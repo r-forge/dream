@@ -23,7 +23,7 @@ Final R.stats:
   cat("
 CODA summary for last 50% of MCMC chains:
 ")
-  print(summary(window(dream.obj$Sequences, start = end(dd$Sequences)/2 + 1)))
+  print(summary(window(dream.obj$Sequences, start = end(dream.obj$Sequences)/2 + 1)))
 
   cat("
 Acceptance Rate

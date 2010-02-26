@@ -4,10 +4,6 @@
 ## TODO: document more clearly, better outputs
 ## 
 
-
-unloadNamespace("dream")
-library(dream)
-
 ## http://r-forge.r-project.org/plugins/scmsvn/viewcvs.php/pkg/FME/inst/doc/FMEmcmc.Rnw?rev=96&root=fme&view=markup
 
 Obs <- data.frame(x=c(   28,  55,   83,  110,  138,  225,  375),   # mg COD/l
@@ -15,6 +11,39 @@ Obs <- data.frame(x=c(   28,  55,   83,  110,  138,  225,  375),   # mg COD/l
 Obs2<- data.frame(x=c(   20,  55,   83,  110,  138,  240,  325),   # mg COD/l
                    y=c(0.05,0.07,0.09,0.10,0.11,0.122,0.125))   # 1/hour
 obs.all <- rbind(Obs,Obs2)
+
+
+###########################
+### FME results
+
+Model <- function(p,x) return(data.frame(x=x,y=p[1]*x/(x+p[2])))
+##Model(c(0.1,1),obs.all$x)
+
+
+library(FME)
+Residuals  <- function(p) {
+   cost<-modCost(model=Model(p,Obs$x),obs=Obs,x="x")
+   modCost(model=Model(p,Obs2$x),obs=Obs2,cost=cost,x="x")
+}
+
+P      <- modFit(f=Residuals,p=c(0.1,1))
+print(P$par)
+
+plotFME <- function(){
+plot(Obs,xlab="mg COD/l",ylab="1/hour", pch=16, cex=1.5,
+     xlim=c(25,400),ylim=c(0,0.15))
+points(Obs2,pch=18,cex=1.5, col="red")
+lines(Model(p=P$par,x=0:375))
+}
+
+
+##########################
+## DREAM results
+
+
+unloadNamespace("dream")
+library(dream)
+
 
 Model.y <- function(p,x) p[1]*x/(x+p[2])
 
@@ -54,30 +83,58 @@ coef(dd)
 
 plot(dd)
 
-
-
-### Comparison to FME results
-
-Model <- function(p,x) return(data.frame(x=x,y=p[1]*x/(x+p[2])))
-##Model(c(0.1,1),obs.all$x)
-
-
-library(FME)
-Residuals  <- function(p) {
-   cost<-modCost(model=Model(p,Obs$x),obs=Obs,x="x")
-   modCost(model=Model(p,Obs2$x),obs=Obs2,cost=cost,x="x")
-}
-
-P      <- modFit(f=Residuals,p=c(0.1,1))
-print(P$par)
-
-## rbind(
-##       pars.maxp-maxp.res,
-##       P$par,
-##       pars.maxp+maxp.res
-##       )
-
-plot(Obs,xlab="mg COD/l",ylab="1/hour", pch=16, cex=1.5)
-points(Obs2,pch=18,cex=1.5, col="red")
-lines(Model(p=P$par,x=0:375))
+plotFME()
 lines(Model(p=coef(dd),x=0:375),col="green")
+
+
+########################
+## Calculate bounds around output estimates
+
+plotCIs <- function(x,cis,...){
+  em <- strwidth("M")/2
+  segments(x0=x,y0=cis[,1],
+           x1=x,y1=cis[,2],
+           ...
+           )
+  segments(x0=x-em,y0=cis[,1],
+           x1=x+em,y1=cis[,1],
+           ...
+           )
+  segments(x0=x-em,y0=cis[,2],
+           x1=x+em,y1=cis[,2],
+           ...
+           )
+}##plotCIs
+
+## Calibrate with Obs
+dd <- dream(
+            FUN=Model.y, func.type="calc.rmse",
+            pars = pars,
+            FUN.pars=list(
+              x=Obs$x
+              ),
+            INIT = LHSInit,
+            measurement=list(data=obs.all$y),
+            control = control
+            )
+
+plotFME()
+lines(Model(p=coef(dd),x=0:375),col="green")
+
+## Naive 95% bounds from residuals
+resid <- Model.y(p=coef(dd),x=Obs$x)-Obs$y
+##densityplot(resid)
+qq <- quantile(resid,c(0.005,.995))
+gg <- t(sapply(Model.y(p=coef(dd),x=Obs$x),function(v) v+qq))
+plotCIs(Obs$x,gg,col="grey")
+
+## Bounds on Obs
+cis.1 <- possibility.envelope(dd)
+plotCIs(Obs$x,cis.1,col="black")
+
+## Test on Obs2
+cis.2 <- possibility.envelope(dd,list(x=Obs2$x))
+plotCIs(Obs2$x,cis.2,col="red")
+
+
+## TODO: add residual error, using method p6, vrugt. equifinality

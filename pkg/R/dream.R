@@ -9,21 +9,23 @@ dreamDefaults <- function()
          outlierTest = 'IQR_test', ## What kind of test to detect outlier chains?
          pCR.Update = TRUE,      ## Adaptive tuning of crossover values
          boundHandling = 'reflect', ## Boundary handling: "reflect", "bound", "fold", "none"
-##Termination criteria. TODO: are the 2nd two valid, given that ndraw is used in adaptive pcr
+### Termination criteria. TODO: are the 2nd two valid, given that ndraw is used in adaptive pcr
          ndraw = 1e5,            ## maximum number of function evaluations
          maxtime = Inf,           ## maximum duration of optimization in seconds
-         Rthres=1.01,            ## R value at which to stop. 
-## Thinning
+         Rthres=1.01,            ## R value at which to stop. Vrugt suggests 1.2
+### Thinning
          thin=FALSE,             ## do reduced sample collection
-          thin.t=NA,            ## parameter for reduced sample collection
-## Parameters with auto-set values
-	   ndim=NA,			 ## number of parameters (automatically set from length of pars)
+         thin.t=NA,            ## parameter for reduced sample collection
+### Reporting
+         REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none  TODO: when trace >= 1
+### Parameters with auto-set values
+         ndim=NA,			 ## number of parameters (automatically set from length of pars)
          DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
-	   nseq = NA              ## Number of Markov Chains / sequences (defaults to N)
-## Currently unused parameters
+         nseq = NA,              ## Number of Markov Chains / sequences (defaults to N)
+         Cb=NA,Wb=NA
+         ## Currently unused parameters
 ##         trace = 0,              ## level of user feedback
-##         REPORT = 10            ## number of iterations between reports when trace >= 1
-         )            
+         )
 
 library(coda)
 
@@ -67,7 +69,7 @@ dream <- function(FUN, func.type,
   
   ## dimensions
   ##  hist.logp matrix. ndraw/nseq x nseq. length nearly ndraw.
-  ##    TODO: removed Iter for simplicity. should have been kept?
+  ##    TODO: removed counter.fun.evals for simplicity. should have been kept?
   ##  CR nseq x steps
   ##  pCR length nCR or scalar
   ##  lCR length nCR or scalar
@@ -77,9 +79,9 @@ dream <- function(FUN, func.type,
   ## Sequences. array n.elem*1.125 x ndim+2 x nseq
   ## Reduced.Seq array n.elem*1.125 x ndim+2 x nseq
 
-  ##  teller [2,ndraw/nseq]
-  ## Iter [nseq,ndraw(+steps*nseq)],
-  ## counter [2,ndraw/nseq]
+  ##  counter.outloop [2,ndraw/nseq]. count number of outside loops
+  ## counter.fun.evals [nseq,ndraw(+steps*nseq)],
+  ## counter [2,ndraw/nseq] . number of generations - iterations of inner loop
   ## iloc
 
 ############################
@@ -124,6 +126,8 @@ dream <- function(FUN, func.type,
             
   if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
 
+  stopifnot(control$REPORT>=0)
+  control$REPORT <- (control$REPORT%/%control$nseq) * control$nseq
   
 ############################
   ## Initialize variables
@@ -133,11 +137,11 @@ dream <- function(FUN, func.type,
   NSEQ <- control$nseq
   
   ## for each iteration...
-  Iter <- NSEQ                          #? 1
+  counter.fun.evals <- NSEQ                          #? 1
   counter <- 2
   iloc <- 1
-  teller <- 2
-  new_teller <- 1
+  counter.outloop <- 2
+  counter.thin <- 1
   
   ## Calculate the parameters in the exponential power density function of Box and Tiao (1973)
   cbwb <- CalcCbWb(control$gamma)
@@ -181,17 +185,20 @@ dream <- function(FUN, func.type,
   ## Number of times through while loop
   n.elem<-floor(control$ndraw/NSEQ)+1
 
-  ## Iter + AR at each step
+  ## counter.fun.evals + AR at each step
   obj$AR<-matrix(NA,n.elem,2)
   obj$AR[1,2]<-NSEQ-1 ##Number if only one rejected
   colnames(obj$AR) <- c("fun.evals","AR")
   
-  ##Iter + R statistic for each variable at each step
+  ##counter.fun.evals + R statistic for each variable at each step
+  ## TODO: now using counter.report
   obj$R.stat<-matrix(NA,ceiling(n.elem/control$steps),NDIM+1)
+  ##  n<10 matlab: -2 * ones(1,MCMCPar.n);
+  obj$R.stat[1,] <- c(counter.fun.evals,rep(-2,NDIM))
   if (!is.null(names(pars))) colnames(obj$R.stat) <- c("fun.evals",names(pars))
   else   colnames(obj$R.stat) <- c("fun.evals",paste("p",1:length(pars),sep=""))
-  
-  ##Iter + pCR for each CR
+
+  ##counter.fun.evals + pCR for each CR
   obj$CR <- matrix(NA,ceiling(n.elem/control$steps),length(pCR)+1)
   colnames(obj$CR) <- c("fun.evals",paste("CR",1:length(pCR),sep=""))
 
@@ -215,6 +222,7 @@ dream <- function(FUN, func.type,
   ## initialize timer
   tic <- as.numeric(Sys.time())
   toc <- 0
+  counter.report <- 1
 
 ################################
   
@@ -239,26 +247,21 @@ dream <- function(FUN, func.type,
   }
 
   ##Save N_CR in memory and initialize delta.tot
-  obj$CR[1,] <- c(Iter,pCR)
+  obj$CR[1,] <- c(counter.fun.evals,pCR)
   delta.tot <- rep(0,NCR)
   
   ##Save history log density of individual chains
   hist.logp[1,] <- X[,"logp"]
   
-  ##Compute R-statistic. Using coda package
-  ## TODO: more elegant way of using coda. And check for correctness
-  ## TODO: alternatively, convert matlab implementation
-  ##  n<10 matlab: -2 * ones(1,MCMCPar.n);
-  obj$R.stat[1,] <- c(Iter,rep(-2,NDIM))
 
 ################################
   ##Start iteration
-  while (Iter < control$ndraw) {
+  while (counter.fun.evals < control$ndraw) {
 
     for (gen.number in 1:control$steps) {
 
       ## Initialize DR properties
-      new_teller <- new_teller + 1 ## counter for thinning
+      counter.thin <- counter.thin + 1 
 
       ## Define the current locations and associated posterior densities
       x.old <- X[,1:NDIM]
@@ -299,10 +302,10 @@ dream <- function(FUN, func.type,
       Sequences[iloc,,] <- t(newgen)
 
       ## Check reduced sample collection
-      if (control$thin && new_teller == control$thin.t){
-        ## Update iloc_2 and new_teller
+      if (control$thin && counter.thin == control$thin.t){
+        ## Update iloc_2 and counter.thin
         iloc.2 <- iloc.2+1
-        new_teller <- 0
+        counter.thin <- 0
         ## Reduced sample collection
         Reduced.Seq[iloc.2,,] <- t(newgen)
       }
@@ -330,23 +333,23 @@ dream <- function(FUN, func.type,
       hist.logp[counter,] <- X[,NDIM+2]
       
       ## Save Acceptance Rate
-      obj$AR[counter,] <- c(Iter,100 * sum(accept) / NSEQ)
+      obj$AR[counter,] <- c(counter.fun.evals,100 * sum(accept) / NSEQ)
 
       ## CompDensity executes function NSEQ times per loop
-      Iter <- Iter + NSEQ
+      counter.fun.evals <- counter.fun.evals + NSEQ
       counter <- counter + 1
     } ##for gen.number steps
 
     ## ---------------------------------------------------------------------
 
     ## Store Important Diagnostic information -- Probability of individual crossover values
-    obj$CR[teller, ] <- c(Iter,pCR)
+    obj$CR[counter.outloop, ] <- c(counter.fun.evals,pCR)
 
     ## Do this to get rounded iteration numbers
-    if (teller == 2) control$steps <- control$steps + 1
+    if (counter.outloop == 2) control$steps <- control$steps + 1
 
     ## Check whether to update individual pCR values
-    if (Iter <= 0.1 * control$ndraw) {
+    if (counter.fun.evals <= 0.1 * control$ndraw) {
       if (control$pCR.Update) {
         ## Update pCR values
         tmp <- AdaptpCR(CR, delta.tot, lCR, control)
@@ -367,10 +370,11 @@ dream <- function(FUN, func.type,
         ## Jump outlier chain to r_idx -- X
         X[out.id,1:(NDIM+2)] <- X[r.idx,]
         ## Add to chainoutlier
-        obj$outlier <- rbind(obj$outlier,c(Iter,out.id))
+        obj$outlier <- rbind(obj$outlier,c(counter.fun.evals,out.id))
       } ##for remove outliers
     }   ##else
 
+    
     if (control$pCR.Update) {
       ## Generate CR values based on current pCR values
       CR <- GenCR(pCR, control)
@@ -380,22 +384,29 @@ dream <- function(FUN, func.type,
 
     ## Calculate Gelman and Rubin convergence diagnostic
     ## Compute the R-statistic using 50% burn-in from Sequences
-    try(
-             obj$R.stat[teller,] <- c(Iter,gelman.diag(
-                   as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i]))),
-                                              autoburnin=TRUE)$psrf[,1])
+    ## TODO: alternatively, convert matlab implementation
+    if (control$REPORT>0 && counter.fun.evals %% control$REPORT==0) {
+
+      counter.report <- counter.report+1
+            
+      try(
+          obj$R.stat[counter.report,] <- c(counter.fun.evals,gelman.diag(
+                    as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i]))),
+                       autoburnin=TRUE)$psrf[,1])
         )
+      
+      if (all(!is.na(obj$R.stat[counter.report,])) &&
+          all(obj$R.stat[counter.report,-1]<control$Rthres)) {
+        obj$EXITMSG <- 'Convergence criteria reached'
+        break
+        ## obj$EXITFLAG <- 3
+      }
 
-    ## Update the teller
-    teller = teller + 1
-
-    ##Additional Exit conditions
+    }##counter.report
     
-    if (all(!is.na(obj$R.stat[teller-1,])) && all(obj$R.stat[teller-1,-1]<control$Rthres)) {
-      obj$EXITMSG <- 'Convergence criteria reached'
-      break
-     ## obj$EXITFLAG <- 3
-    }
+    ## Update the counter.outloop
+    counter.outloop = counter.outloop + 1
+
       
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
@@ -409,7 +420,7 @@ dream <- function(FUN, func.type,
 
   toc <- as.numeric(Sys.time()) - tic
   
-  if (Iter>= control$ndraw){
+  if (counter.fun.evals>= control$ndraw){
     obj$EXITMSG <- "Maximum function evaluations reached"
    ## obj$EXITFLAG <- 4
   }
@@ -430,13 +441,13 @@ dream <- function(FUN, func.type,
                                            ))
   }
 
-  obj$R.stat <- obj$R.stat[1:(teller-1),]
+  obj$R.stat <- obj$R.stat[1:counter.report,,drop=FALSE]
   obj$AR <- obj$AR[1:(counter-1),]
-  obj$CR <- obj$CR[1:(teller-1),]
+  obj$CR <- obj$CR[1:(counter.outloop-1),]
   
   ## store number of function evaluations
   ## store number of iterations
-  obj$fun.evals <- Iter
+  obj$fun.evals <- counter.fun.evals
   ## store the amount of time taken
   obj$time <- toc
 

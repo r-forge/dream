@@ -7,7 +7,7 @@
 plot.dream <- function(dream.obj,interactive=TRUE){
   devAskNewPage(interactive)
   
-  ss <- window(dream.obj$Sequences, start = end(dd$Sequences)/2 + 1)
+  ss <- window(dream.obj$Sequences, start = end(dream.obj$Sequences)/2 + 1)
 
   ## Trace and parameter density
   
