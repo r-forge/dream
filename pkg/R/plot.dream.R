@@ -4,10 +4,10 @@
 
 ##' Uses second half of sequences
 
-plot.dream <- function(dream.obj,interactive=TRUE){
+plot.dream <- function(x,interactive=TRUE,...){
   devAskNewPage(interactive)
   
-  ss <- window(dream.obj$Sequences, start = end(dream.obj$Sequences)/2 + 1)
+  ss <- window(x$Sequences, start = end(x$Sequences)/2 + 1)
 
   ## Trace and parameter density
   
@@ -17,19 +17,19 @@ plot.dream <- function(dream.obj,interactive=TRUE){
   densityplot(ss)
 
   ## Acceptance rate
-  plot(table(dd$AR[,2]),main="Distribution of % acceptance rate")
+  plot(table(x$AR[,2]),main="Distribution of % acceptance rate")
   
   ##Convergence
   
   try(gelman.plot(ss))
 
-  plot(dd$R.stat[,1],dd$R.stat[,2],type="l",ylim=c(0,2))
-  for (i in 2:dd$control$ndim) lines(dd$R.stat[,1],dd$R.stat[,i+1],ylim=c(0,2))
+  plot(x$R.stat[,1],x$R.stat[,2],type="l",ylim=c(0,2))
+  for (i in 2:x$control$ndim) lines(x$R.stat[,1],x$R.stat[,i+1],ylim=c(0,2))
   title(main="Evolution of R.stat",sub="Equivalent to gelman.plot")
 
   ## Multi-variate density for first chain
   
-  splom(as.data.frame(dd$Sequences[[1]]),
+  splom(as.data.frame(x$Sequences[[1]]),
       upper.panel = panel.smoothScatter, nrpoints = 0,
       lower.panel = function(x, y, ...) {
           panel.grid(-1, -1)

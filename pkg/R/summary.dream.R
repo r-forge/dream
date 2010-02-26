@@ -1,5 +1,5 @@
 
-summary.dream <- function(dream.obj){
+summary.dream <- function(object,...){
 
   cat(sprintf("
 Exit message:  %s
@@ -7,15 +7,15 @@ Num fun evals: %d
 Time (secs):   %.1f
 Final R.stats:
 ",
-              dream.obj$EXITMSG,
-              dream.obj$fun.evals,
-              dream.obj$time
+              object$EXITMSG,
+              object$fun.evals,
+              object$time
               ))
 
-  R.stat.last <- tail(dream.obj$R.stat,1)
-  for (i in 2:ncol(dream.obj$R.stat)){
+  R.stat.last <- tail(object$R.stat,1)
+  for (i in 2:ncol(object$R.stat)){
     cat(sprintf("\t%s:\t%f\n",
-                colnames(dream.obj$R.stat)[i],
+                colnames(object$R.stat)[i],
                 R.stat.last[i]
                 ))
   } ##for
@@ -23,11 +23,11 @@ Final R.stats:
   cat("
 CODA summary for last 50% of MCMC chains:
 ")
-  print(summary(window(dream.obj$Sequences, start = end(dream.obj$Sequences)/2 + 1)))
+  print(summary(window(object$Sequences, start = end(object$Sequences)/2 + 1)))
 
   cat("
 Acceptance Rate
 ")
-  summary(dream.obj$AR[,2])
+  summary(object$AR[,2])
   
 } ##summary.dream

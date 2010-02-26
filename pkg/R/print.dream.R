@@ -1,18 +1,19 @@
-print.dream <- function(dream.obj){
+print.dream <- function(x,...){
   cat("
 Call:
 ")
   
-  print(dream.obj$call)
+  print(x$call)
   
   cat("
 Control:
 ")
-  for (i in names(dream.obj$control)){
-    v <- dream.obj$control[[i]]
+  for (i in names(x$control)){
+    v <- x$control[[i]]
     cat(sprintf("%15s: ",i))
     cat(v,"\n")
   } 
 
-  cat("\nExit condition:",dream.obj$EXITMSG,"\n")
+  cat("\nExit condition:",x$EXITMSG,"\n")
+
 }

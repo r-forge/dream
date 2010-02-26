@@ -14,7 +14,6 @@ dreamDefaults <- function()
          maxtime = Inf,           ## maximum duration of optimization in seconds
          Rthres=1.01,            ## R value at which to stop. Vrugt suggests 1.2
 ### Thinning
-         thin=FALSE,             ## do reduced sample collection
          thin.t=NA,            ## parameter for reduced sample collection
 ### Reporting
          REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none  TODO: when trace >= 1
@@ -56,8 +55,7 @@ library(coda)
 ##' MATLAB function:
 ##' function [Sequences,Reduced_Seq,X,output,hist_logp] = dream(MCMCPar,ParRange,Measurement,ModelName,Extra,option)
 
-dream <- function(FUN, func.type,
-                  pars = list(x = range(0, 1e6)),
+dream <- function(FUN, func.type,pars,
                   FUN.pars=list(),
                   INIT = LHSInit,
                   INIT.pars=list(),
@@ -87,25 +85,26 @@ dream <- function(FUN, func.type,
 ############################
   ## Process parameters
 
+  ## Check validity of parameters
   if (is.character(FUN))  FUN <- get(FUN, mode = "function")
   stopifnot(is.function(FUN))
   stopifnot(is.list(pars))
   stopifnot(length(pars) > 0)
+  pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
+  stopifnot(is.list(control))
+  stopifnot(func.type %in% c("calc.rmse","calc.loglik","calc.weighted.rmse","posterior.density","logposterior.density"))
   stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
-  stopifnot(func.type!="calc.rmse" || "data" %in% names(measurement))
+  stopifnot(!func.type %in% c("calc.rmse","calc.loglik","calc.weighted.rmse") || "data" %in% names(measurement))
   
-  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none"))
-
+  ## Check INIT and FUN have required extra parameters in INIT.pars & FUN.pars
   req.args.init <- names(formals(INIT))
   req.args.FUN <- names(formals(FUN))
-    
+
   if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars)))) stop(paste(c("INIT Missing extra arguments:",req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),sep=" "))
   if(!all(req.args.FUN[2:length(req.args.FUN)] %in% c(names(FUN.pars)))) stop(paste(c("FUN Missing extra arguments:",req.args.FUN[!req.args.FUN %in% c("x",names(FUN.pars))]),sep=" "))
- 
-  pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
+  
+  ## Update default settings with supplied settings
 
-  ## update default options with supplied options
-  stopifnot(is.list(control))
   control <- modifyList(dreamDefaults(), control)
   isValid <- names(control) %in% names(dreamDefaults())
   if (any(!isValid))
@@ -116,18 +115,22 @@ dream <- function(FUN, func.type,
     if (! "sigma" %in% names(measurement)) measurement$sigma <- sd(measurement$data)
     if (! "N" %in% names(measurement)) measurement$N <- length(measurement$data)
   }
-  
-  ## determine number of variables to be optimized
+
+  ## Set automatically determined values
   control$ndim<-length(pars)
   if (is.na(control$nseq)) control$nseq <- control$ndim
   if (is.na(control$DEpairs)) control$DEpairs <- floor((control$nseq-1)/2)
 
-  stopifnot(control$DEpairs<=(control$nseq-1)/2) ## Requirement of offde
-            
-  if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
-
-  stopifnot(control$REPORT>=0)
+  ## Correct to match nseq
   control$REPORT <- (control$REPORT%/%control$nseq) * control$nseq
+
+
+  ## Check validity of settings
+  if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
+  stopifnot(control$DEpairs<=(control$nseq-1)/2) ## Requirement of offde
+  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none")) 
+  if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
+  stopifnot(control$REPORT>=0)
   
 ############################
   ## Initialize variables
@@ -136,8 +139,8 @@ dream <- function(FUN, func.type,
   NCR <- control$nCR
   NSEQ <- control$nseq
   
-  ## for each iteration...
-  counter.fun.evals <- NSEQ                          #? 1
+  ## Counters
+  counter.fun.evals <- NSEQ
   counter <- 2
   iloc <- 1
   counter.outloop <- 2
@@ -209,7 +212,7 @@ dream <- function(FUN, func.type,
   ## Sequences[1,] <- sapply(pars, mean) ## TODO: include?
 
   ## Check whether will save a reduced sample
-  if (control$thin){
+  if (!is.na(control$thin.t)){
     iloc.2 <- 0
     Reduced.Seq <- array(NA,c(floor(n.elem/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
@@ -302,7 +305,7 @@ dream <- function(FUN, func.type,
       Sequences[iloc,,] <- t(newgen)
 
       ## Check reduced sample collection
-      if (control$thin && counter.thin == control$thin.t){
+      if (!is.na(control$thin.t) && counter.thin == control$thin.t){
         ## Update iloc_2 and counter.thin
         iloc.2 <- iloc.2+1
         counter.thin <- 0
@@ -431,7 +434,7 @@ dream <- function(FUN, func.type,
   ## Convert sequences to mcmc objects
   Sequences <- Sequences[1:iloc,,]
   obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
-  if (control$thin){
+  if (!is.na(control$thin)){
     Reduced.Seq <- Reduced.Seq[1:iloc.2,,]
     obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ,function(i) mcmc(
                                                                Reduced.Seq[,1:NDIM,i],
