@@ -51,7 +51,7 @@ CompDensity <- function(pars,control,FUN,func.type,
            },
            ## Model computes output simulation           
            calc.loglik={
-             err <- measurement$data-modpred
+             err <- as.numeric(measurement$data-modpred)
                  
              ## Derive the log likelihood
              logp[ii] <- measurement$N*log(control$Wb/measurement$sigma)-
@@ -60,8 +60,10 @@ CompDensity <- function(pars,control,FUN,func.type,
              p[ii] <- logp[ii]
            },
            ## Model computes output simulation
+           ## TODO: may need as.numeric
            calc.rmse={
-             err <- measurement$data-modpred
+             
+             err <- as.numeric(measurement$data-modpred)
              ## Derive the sum of squared error
              SSR <- sum(abs(err)^(2/(1+control$gamma)))
              ## And retain in memory
@@ -78,7 +80,7 @@ CompDensity <- function(pars,control,FUN,func.type,
            ## TODO: identical to rmse because difference is in metrop
            calc.weighted.rmse={
              ## Define the error
-             err <- measurement$data-modpred
+             err <- as.numeric(measurement$data-modpred)
              ## Derive the sum of squared error
              SSR <- sum(abs(err)^(2/(1+control$gamma)))
              ## And retain in memory

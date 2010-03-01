@@ -12,13 +12,18 @@ Final R.stats:
               object$time
               ))
 
-  R.stat.last <- tail(object$R.stat,1)
-  for (i in 2:ncol(object$R.stat)){
+  R.stat.last <- tail(object$R.stat,1)[,-1]
+  if (all(R.stat.last<0)) {
+    R.stat.last <- gelman.diag(object$Sequences)$psrf[,1]
+  }
+  names(R.stat.last) <-colnames(object$R.stat)[-1]
+    
+  for (i in 1:length(R.stat.last)){
     cat(sprintf("\t%s:\t%f\n",
-                colnames(object$R.stat)[i],
+                names(R.stat.last)[i],
                 R.stat.last[i]
                 ))
-  } ##for
+  } ##for    
 
   cat("
 CODA summary for last 50% of MCMC chains:

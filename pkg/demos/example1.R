@@ -24,7 +24,6 @@ control <- list(
                 eps=5e-2,
                 outlierTest='IQR_test',
                 pCR.Update=TRUE,
-                thin=TRUE,
                 thin.t=10,
                 boundHandling='none'
                 )

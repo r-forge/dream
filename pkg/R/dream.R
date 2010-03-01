@@ -44,10 +44,10 @@ library(coda)
 ##'   X converged nseq points in parameter space. matrix nseq x ndim
 ##'   Sequences mcmc.list object. nseq mcmc elements of ndim variables
 ##'   Reduced.Seq mcmc.list object. nseq mcmc elements of ndim variables
-##'   AR acceptance rate for each draw. matrix n.elem x 2
+##'   AR acceptance rate for each draw. matrix max.counter x 2
 ##'   outlier vector of variable length
-##'   R.stat Gelman.Diag statistic for each variable at each step. matrix n.elem/steps x 1+ndim
-##'   CR. Probability of crossover. matrix n.elem/steps x 1+length(pCR)
+##'   R.stat Gelman.Diag statistic for each variable at each step. matrix max.counter/steps x 1+ndim
+##'   CR. Probability of crossover. matrix max.counter/steps x 1+length(pCR)
 ##'
 
 ##' Terminates either when control$ndraw or control$maxtime is reached
@@ -74,8 +74,8 @@ dream <- function(FUN, func.type,pars,
   ##  Table.JumpRate ndim x DEpairs. range (0,~1.683]
   ##  delta.tot vector of length nCR
 
-  ## Sequences. array n.elem*1.125 x ndim+2 x nseq
-  ## Reduced.Seq array n.elem*1.125 x ndim+2 x nseq
+  ## Sequences. array max.counter*1.125 x ndim+2 x nseq
+  ## Reduced.Seq array max.counter*1.125 x ndim+2 x nseq
 
   ##  counter.outloop [2,ndraw/nseq]. count number of outside loops
   ## counter.fun.evals [nseq,ndraw(+steps*nseq)],
@@ -145,6 +145,10 @@ dream <- function(FUN, func.type,pars,
   iloc <- 1
   counter.outloop <- 2
   counter.thin <- 1
+
+  ## Max number of times through loops
+  max.counter <- ceiling((control$ndraw+control$steps*NSEQ)/NSEQ)+1
+  max.counter.outloop <- ceiling((control$ndraw+control$steps*NSEQ)/NSEQ/control$steps)+1
   
   ## Calculate the parameters in the exponential power density function of Box and Tiao (1973)
   cbwb <- CalcCbWb(control$gamma)
@@ -156,7 +160,7 @@ dream <- function(FUN, func.type,pars,
   for (zz in 1:control$DEpairs) Table.JumpRate[,zz] <- 2.38/sqrt(2*zz*1:NDIM)
   
   ## Initialize the array that contains the history of the log_density of each chain
-  hist.logp<-matrix(NA,floor(control$ndraw/NSEQ),NSEQ)
+  hist.logp<-matrix(NA,max.counter,NSEQ)
   
   if (control$pCR.Update){
     ## Calculate multinomial probabilities of each of the nCR CR values
@@ -184,37 +188,33 @@ dream <- function(FUN, func.type,pars,
   EXITFLAG <- NA
   EXITMSG <- NULL
 
-  ## Derive the number of elements in the output file
-  ## Number of times through while loop
-  n.elem<-floor(control$ndraw/NSEQ)+1
-
   ## counter.fun.evals + AR at each step
-  obj$AR<-matrix(NA,n.elem,2)
+  obj$AR<-matrix(NA,max.counter,2)
   obj$AR[1,2]<-NSEQ-1 ##Number if only one rejected
   colnames(obj$AR) <- c("fun.evals","AR")
   
   ##counter.fun.evals + R statistic for each variable at each step
   ## TODO: now using counter.report
-  obj$R.stat<-matrix(NA,ceiling(n.elem/control$steps),NDIM+1)
+  obj$R.stat<-matrix(NA,max.counter.outloop,NDIM+1)
   ##  n<10 matlab: -2 * ones(1,MCMCPar.n);
   obj$R.stat[1,] <- c(counter.fun.evals,rep(-2,NDIM))
   if (!is.null(names(pars))) colnames(obj$R.stat) <- c("fun.evals",names(pars))
   else   colnames(obj$R.stat) <- c("fun.evals",paste("p",1:length(pars),sep=""))
 
   ##counter.fun.evals + pCR for each CR
-  obj$CR <- matrix(NA,ceiling(n.elem/control$steps),length(pCR)+1)
+  obj$CR <- matrix(NA,max.counter.outloop,length(pCR)+1)
   colnames(obj$CR) <- c("fun.evals",paste("CR",1:length(pCR),sep=""))
 
   obj$outlier<-NULL
   
-  Sequences <- array(NA, c(floor(1.25*n.elem),NDIM+2,NSEQ))
+  Sequences <- array(NA, c(floor(1.25*max.counter),NDIM+2,NSEQ))
   if (!is.null(names(pars))) colnames(Sequences) <- c(names(pars),"p","logp")
   ## Sequences[1,] <- sapply(pars, mean) ## TODO: include?
 
   ## Check whether will save a reduced sample
   if (!is.na(control$thin.t)){
     iloc.2 <- 0
-    Reduced.Seq <- array(NA,c(floor(n.elem/control$thin.t),NDIM+2,NSEQ))
+    Reduced.Seq <- array(NA,c(floor(max.counter/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
 
 ############################
@@ -259,8 +259,10 @@ dream <- function(FUN, func.type,pars,
 
 ################################
   ##Start iteration
+  ## max times (ndraw+steps*NSEQ)/(NSEQ*steps)
   while (counter.fun.evals < control$ndraw) {
 
+    ## max times ceiling(ndraw+steps*NSEQ)/NSEQ
     for (gen.number in 1:control$steps) {
 
       ## Initialize DR properties
@@ -422,7 +424,7 @@ dream <- function(FUN, func.type,pars,
   } ##while
 
   toc <- as.numeric(Sys.time()) - tic
-  
+
   if (counter.fun.evals>= control$ndraw){
     obj$EXITMSG <- "Maximum function evaluations reached"
    ## obj$EXITFLAG <- 4
@@ -434,7 +436,7 @@ dream <- function(FUN, func.type,pars,
   ## Convert sequences to mcmc objects
   Sequences <- Sequences[1:iloc,,]
   obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
-  if (!is.na(control$thin)){
+  if (!is.na(control$thin.t)){
     Reduced.Seq <- Reduced.Seq[1:iloc.2,,]
     obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ,function(i) mcmc(
                                                                Reduced.Seq[,1:NDIM,i],
