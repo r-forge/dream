@@ -5,7 +5,7 @@
 ##' @return a dream object with approximately the requested number of function evaluations
 ## TODO. extra parameters to set in control?
 ## TODO: does not seem to yield stationary distribution?
-simulate.dream <- function(object,nsim=1000,seed=NULL){
+simulate.dream <- function(object,nsim=1000,seed=NULL,...){
   
   ## Generate more results from converged chains
   object$control$REPORT <- 0
@@ -37,7 +37,7 @@ simulate.dream <- function(object,nsim=1000,seed=NULL){
 ##' @return  data frame with each column corresponding to a returned vector
 predict.dream <- function(object,newdata=NULL,
                           method="maxLik",level=0.99,
-                          last.prop=0.5,use.thinned=TRUE
+                          last.prop=0.5,use.thinned=TRUE,...
                           ){
 
   ## Check and initialise parameters

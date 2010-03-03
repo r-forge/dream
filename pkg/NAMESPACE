@@ -1,4 +1,5 @@
 import(coda)
+import(stats)
 
 export(dream)
 export(CovInit)
