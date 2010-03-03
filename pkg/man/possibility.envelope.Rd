@@ -7,3 +7,8 @@
 \item{FUN.pars}{new par values. if missing, use those from dream object}
 \item{ndraw}{number of new iterations}
 \item{conf}{Percentage two-sided confidence interval}}
+\details{
+Progresses chains that are assumed to have converged and thins them, to obtain a sample
+of size \code{ndraw} from the posterior parameter distribution. Evaluates the function for
+all parameter sets and reports \code{conf}\% confidence interval.
+}

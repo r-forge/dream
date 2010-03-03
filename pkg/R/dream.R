@@ -9,6 +9,7 @@ dreamDefaults <- function()
          outlierTest = 'IQR_test', ## What kind of test to detect outlier chains?
          pCR.Update = TRUE,      ## Adaptive tuning of crossover values
          boundHandling = 'reflect', ## Boundary handling: "reflect", "bound", "fold", "none"
+         burnin.length=0.1, ## Proportion of iterations considered to be burnin. 0 to turn off.
 ### Termination criteria. TODO: are the 2nd two valid, given that ndraw is used in adaptive pcr
          ndraw = 1e5,            ## maximum number of function evaluations
          maxtime = Inf,           ## maximum duration of optimization in seconds
@@ -99,9 +100,16 @@ dream <- function(FUN, func.type,pars,
   ## Check INIT and FUN have required extra parameters in INIT.pars & FUN.pars
   req.args.init <- names(formals(INIT))
   req.args.FUN <- names(formals(FUN))
+  req.args.FUN <- req.args.FUN[2:length(req.args.FUN)] ##optional pars only
+  
+  if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars))))
+    stop(paste(c("INIT Missing extra arguments:",
+                 req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),
+               sep=" ",collapse=" "))
 
-  if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars)))) stop(paste(c("INIT Missing extra arguments:",req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),sep=" "))
-  if(!all(req.args.FUN[2:length(req.args.FUN)] %in% c(names(FUN.pars)))) stop(paste(c("FUN Missing extra arguments:",req.args.FUN[!req.args.FUN %in% c("x",names(FUN.pars))]),sep=" "))
+  if(!all(req.args.FUN %in% names(FUN.pars))) stop(paste(c("FUN Missing extra arguments:",
+                                                           req.args.FUN[!req.args.FUN %in% c(names(FUN.pars))]),
+                                                         collapse=" "))
   
   ## Update default settings with supplied settings
 
@@ -111,7 +119,7 @@ dream <- function(FUN, func.type,pars,
     stop("unrecognised options: ",
          toString(names(control)[!isValid]))
 
-  if (!is.null("measurement")){
+  if (!is.null(measurement)){
     if (! "sigma" %in% names(measurement)) measurement$sigma <- sd(measurement$data)
     if (! "N" %in% names(measurement)) measurement$N <- length(measurement$data)
   }
@@ -124,7 +132,8 @@ dream <- function(FUN, func.type,pars,
   ## Correct to match nseq
   control$REPORT <- (control$REPORT%/%control$nseq) * control$nseq
 
-
+  if (control$burnin.length<1) control$burnin.length <- control$burnin.length*control$ndraw
+  
   ## Check validity of settings
   if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
   stopifnot(control$DEpairs<=(control$nseq-1)/2) ## Requirement of offde
@@ -149,6 +158,8 @@ dream <- function(FUN, func.type,pars,
   ## Max number of times through loops
   max.counter <- ceiling((control$ndraw+control$steps*NSEQ)/NSEQ)+1
   max.counter.outloop <- ceiling((control$ndraw+control$steps*NSEQ)/NSEQ/control$steps)+1
+
+  if (!is.na(control$thin.t) && floor(max.counter/control$thin.t)<2) stop(sprintf("Thin parameter should be much smaller than number of iterations (currently %d,%d)",control$thin.t,max.counter))
   
   ## Calculate the parameters in the exponential power density function of Box and Tiao (1973)
   cbwb <- CalcCbWb(control$gamma)
@@ -176,6 +187,8 @@ dream <- function(FUN, func.type,pars,
     lCR <- NSEQ*control$steps
   } ##pCR.Update
 
+  end.burnin <- control$burnin.length
+
 
 ############################
   ## Initialise output object
@@ -185,8 +198,10 @@ dream <- function(FUN, func.type,pars,
   obj$call <- match.call()
   obj$control <- control
 
-  EXITFLAG <- NA
-  EXITMSG <- NULL
+  obj$in.burnin <- TRUE
+  
+  obj$EXITFLAG <- NA
+  obj$EXITMSG <- NULL
 
   ## counter.fun.evals + AR at each step
   obj$AR<-matrix(NA,max.counter,2)
@@ -214,7 +229,7 @@ dream <- function(FUN, func.type,pars,
   ## Check whether will save a reduced sample
   if (!is.na(control$thin.t)){
     iloc.2 <- 0
-    Reduced.Seq <- array(NA,c(floor(max.counter/control$thin.t),NDIM+2,NSEQ))
+    Reduced.Seq <- array(NA,c(ceiling(max.counter/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
 
 ############################
@@ -353,31 +368,41 @@ dream <- function(FUN, func.type,pars,
     ## Do this to get rounded iteration numbers
     if (counter.outloop == 2) control$steps <- control$steps + 1
 
+    outliers <- RemOutlierChains(X,hist.logp[1:(counter-1),],control)
+    
     ## Check whether to update individual pCR values
-    if (counter.fun.evals <= 0.1 * control$ndraw) {
+    if (counter.fun.evals <= end.burnin) {
       if (control$pCR.Update) {
         ## Update pCR values
         tmp <- AdaptpCR(CR, delta.tot, lCR, control)
         pCR <- tmp$pCR
         lCR <- tmp$lCR
       }
-    } else {
-      ## See whether there are any outlier chains, and remove them to current best value of X
-      tmp <- RemOutlierChains(X,hist.logp[1:(counter-1),],control)
+      
+      ## Change any outlier chains to current best value of X
+      ## TODO: matlab code doesn't match paper. Outlier removal should be within burnin period
+      
       ## Loop over each outlier chain (if length>0)
-      for (out.id in tmp$chain.id){
+      for (out.id in outliers$chain.id){
         ## Draw random other chain -- cannot be the same as current chain
-        r.idx <- which.max(tmp$mean.hist.logp)
+        r.idx <- which.max(outliers$mean.hist.logp)
         ## Added -- update hist_logp -- chain will not be considered as an outlier chain then
         hist.logp[1:(counter-1),out.id] <- hist.logp[1:(counter-1),r.idx]
-        ## Jump outlier chain to r_idx -- Sequences
+        ## Jump outlier chain to r_idx -- Sequences, X
         Sequences[iloc,1:(NDIM+2),out.id] <- X[r.idx,]
-        ## Jump outlier chain to r_idx -- X
         X[out.id,1:(NDIM+2)] <- X[r.idx,]
-        ## Add to chainoutlier
+        ## Add to outlier tracker
         obj$outlier <- rbind(obj$outlier,c(counter.fun.evals,out.id))
       } ##for remove outliers
-    }   ##else
+
+    } else if (control$burnin.length!=0){
+      obj$in.burnin <- FALSE
+      if (length(outliers)>0){
+        warning("Outliers detected outside burn-in period, returning to burn in")
+        obj$in.burnin <- TRUE
+        end.burnin <- counter.fun.evals+control$burnin.length
+      }
+    }   ##in burn in.
 
     
     if (control$pCR.Update) {

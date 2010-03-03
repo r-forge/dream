@@ -33,12 +33,11 @@ CompDensity <- function(pars,control,FUN,func.type,
   ##  modpred. scalar or vector commensurate to measurement$data
   ##  err. vector of same length as modpred
   ##  SSR scalar
+  ## temp. list of length nseq with elements of length 2: p and logp
 
-  p <- rep(NA,control$nseq)
-  logp <- rep(NA,control$nseq)
+  ## Ready for multicore
+  temp <- lapply(1:nrow(pars),function (ii){
   
-  ## Sequential evaluation
-  for (ii in 1:nrow(pars)){
     ## Call model to generate simulated data
     ## TODO: correct use of optional pars?
     modpred <- FUN(pars[ii,],...)
@@ -46,18 +45,18 @@ CompDensity <- function(pars,control,FUN,func.type,
     switch(func.type,
            ## Model directly computes posterior density
            posterior.density={
-             p[ii] <- modpred
-             logp[ii] <- log(modpred)
+             p <- modpred
+             logp <- log(modpred)
            },
            ## Model computes output simulation           
            calc.loglik={
              err <- as.numeric(measurement$data-modpred)
                  
              ## Derive the log likelihood
-             logp[ii] <- measurement$N*log(control$Wb/measurement$sigma)-
+             logp <- measurement$N*log(control$Wb/measurement$sigma)-
                control$Cb*(sum((abs(err/measurement$sigma))^(2/(1+control$gamma))))
              ## And retain in memory
-             p[ii] <- logp[ii]
+             p <- logp
            },
            ## Model computes output simulation
            ## TODO: may need as.numeric
@@ -67,14 +66,14 @@ CompDensity <- function(pars,control,FUN,func.type,
              ## Derive the sum of squared error
              SSR <- sum(abs(err)^(2/(1+control$gamma)))
              ## And retain in memory
-             p[ii] <- -SSR
-             logp[ii] <- -0.5*SSR
+             p <- -SSR
+             logp <- -0.5*SSR
              
            },
            ## Model directly computes log posterior density
            logposterior.density={
-             p[ii] <- modpred
-             logp[ii] <- modpred
+             p <- modpred
+             logp <- modpred
            },
            ## Similar as 3, but now weights with the Measurement Sigma
            ## TODO: identical to rmse because difference is in metrop
@@ -84,10 +83,14 @@ CompDensity <- function(pars,control,FUN,func.type,
              ## Derive the sum of squared error
              SSR <- sum(abs(err)^(2/(1+control$gamma)))
              ## And retain in memory
-             p[ii] <- -SSR
-             logp[ii] <- -0.5*SSR
+             p <- -SSR
+             logp <- -0.5*SSR
            }) ##switch
-  }           ## for rows
+    c(p,logp)
+  }) ## lapply
+
+  p <- sapply(temp,function(x) x[1])
+  logp <- sapply(temp,function(x) x[2])
 
   stopifnot(!any(is.na(p)))
   ##stopifnot(!any(is.na(logp))) ##Not used anyway

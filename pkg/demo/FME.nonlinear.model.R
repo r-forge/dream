@@ -45,21 +45,15 @@ unloadNamespace("dream")
 library(dream)
 
 
-Model.y <- function(p,x) p[1]*x/(x+p[2])
+Model.y <- function(p,x) as.ts(p[1]*x/(x+p[2]))
+
+set.seed(456)
 
 control <- list(
-                nseq=5,
-                gamma=0,
-                nCR=3,
-                ndraw=1e5,
-                steps=10,
-                eps=5e-2,
-                outlierTest='IQR_test',
-                pCR.Update=TRUE,
-                thin=TRUE,
-                thin.t=10,
-                boundHandling="fold",
-                Rthres=1+1e-3
+                nseq=4
+##                REPORT=0
+##                ndraw=1000
+                ##                Rthres=1+1e-3
                 )
 
 pars <- list(p1=c(0,1),p2=c(0,100))
@@ -114,10 +108,35 @@ dd <- dream(
               x=Obs$x
               ),
             INIT = LHSInit,
-            measurement=list(data=obs.all$y),
+            measurement=list(data=Obs$y),
             control = control
             )
 
+##Obs1
+plotFME()
+lines(Obs$x,predict(dd),col="blue")
+lines(Obs$x,predict(dd,method="mean"),col="red")
+lines(Obs$x,predict(dd,method="median"),col="orange")
+plotCIs(Obs$x,predict(dd,method="CI"),col="black")
+
+
+##Obs2
+plotFME()
+lines(Obs2$x,predict(dd,list(x=Obs2$x)),col="blue")
+lines(Obs2$x,predict(dd,list(x=Obs2$x),method="mean"),col="red")
+lines(Obs2$x,predict(dd,list(x=Obs2$x),method="median"),col="orange")
+plotCIs(Obs2$x,predict(dd,list(x=Obs2$x),method="CI"),col="red")
+
+### Example with new sample
+dd.sim <- simulate(dd)
+predict(dd.sim)
+plotFME()
+lines(Obs2$x,predict(dd,list(x=Obs2$x)),col="blue")
+lines(Obs2$x,predict(dd.sim,list(x=Obs2$x)),col="purple")
+
+
+########################
+## Legacy examples
 plotFME()
 lines(Model(p=coef(dd),x=0:375),col="green")
 
@@ -128,13 +147,8 @@ qq <- quantile(resid,c(0.005,.995))
 gg <- t(sapply(Model.y(p=coef(dd),x=Obs$x),function(v) v+qq))
 plotCIs(Obs$x,gg,col="grey")
 
-## Bounds on Obs
-cis.1 <- possibility.envelope(dd)
-plotCIs(Obs$x,cis.1,col="black")
-
 ## Test on Obs2
-cis.2 <- possibility.envelope(dd,list(x=Obs2$x))
+cis.2 <- predict(dd,list(x=Obs2$x),out="CI")
 plotCIs(Obs2$x,cis.2,col="red")
-
 
 ## TODO: add residual error, using method p6, vrugt. equifinality

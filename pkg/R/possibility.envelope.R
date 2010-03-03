@@ -12,8 +12,12 @@ possibility.envelope <- function(dd,FUN.pars=NULL,ndraw=1000,conf=99){
   dd$control$REPORT <- 0
   dd$control$Rthres <- 0
   dd$control$ndraw <- ndraw
+  if (is.na(dd$control$thin.t)) dd$control$thin.t <- 10
   dd$call$control <- dd$control
   dd$call$INIT <- function(pars,nseq) dd$X[,1:dd$control$ndim]
+
+  print(sprintf("Will require %d function evaluations",ndraw+ndraw/dd$control$thin.t))
+  
   ee <- eval(dd$call)
 
   if (is.null(FUN.pars)) FUN.pars <- eval(dd$call$FUN.pars)
