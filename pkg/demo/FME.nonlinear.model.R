@@ -51,8 +51,8 @@ set.seed(456)
 
 control <- list(
                 nseq=4
-##                REPORT=0
-##                ndraw=1000
+                ##                REPORT=0
+                ##                ndraw=1000
                 ##                Rthres=1+1e-3
                 )
 

@@ -35,8 +35,7 @@ CompDensity <- function(pars,control,FUN,func.type,
   ##  SSR scalar
   ## temp. list of length nseq with elements of length 2: p and logp
 
-  ## Ready for multicore
-  temp <- lapply(1:nrow(pars),function (ii){
+  do.calc <- function (ii){
   
     ## Call model to generate simulated data
     ## TODO: correct use of optional pars?
@@ -87,8 +86,11 @@ CompDensity <- function(pars,control,FUN,func.type,
              logp <- -0.5*SSR
            }) ##switch
     c(p,logp)
-  }) ## lapply
-
+  }
+  
+  if (control$use.multicore) temp <- mclapply(1:nrow(pars),do.calc,mc.preschedule=FALSE)
+  else temp <- lapply(1:nrow(pars),do.calc)
+  
   p <- sapply(temp,function(x) x[1])
   logp <- sapply(temp,function(x) x[2])
 

@@ -19,7 +19,6 @@ offde<-function(x.old,control,CR,
   nseq <- control$nseq
   ndim <- control$ndim
 
-
   ## dimensions
   ##  eps. matrix nseq x ndim
   ##  DEversion. vector of length nseq. range [0,DEpairs]
@@ -57,6 +56,9 @@ offde<-function(x.old,control,CR,
   delta.x<-matrix(0,nseq,ndim)
   
   ## Each chain evolves using information from other chains to create offspring
+  ## TODO: can this loop be parallelised?
+  ##  is an expensive part of dream. 36.6% of time
+  ##  but depends on state of other loops
   for (qq in 1:nseq){
     
     ## Define ii and remove current member as an option

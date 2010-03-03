@@ -16,8 +16,9 @@ dreamDefaults <- function()
          Rthres=1.01,            ## R value at which to stop. Vrugt suggests 1.2
 ### Thinning
          thin.t=NA,            ## parameter for reduced sample collection
-### Reporting
-         REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none  TODO: when trace >= 1
+### Efficiency improvements
+         REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none
+         use.multicore=TRUE,
 ### Parameters with auto-set values
          ndim=NA,			 ## number of parameters (automatically set from length of pars)
          DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
@@ -133,6 +134,8 @@ dream <- function(FUN, func.type,pars,
   control$REPORT <- (control$REPORT%/%control$nseq) * control$nseq
 
   if (control$burnin.length<1) control$burnin.length <- control$burnin.length*control$ndraw
+
+  if (control$use.multicore) control$use.multicore <- require(multicore)
   
   ## Check validity of settings
   if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
@@ -140,6 +143,7 @@ dream <- function(FUN, func.type,pars,
   stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none")) 
   if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
   stopifnot(control$REPORT>=0)
+
   
 ############################
   ## Initialize variables

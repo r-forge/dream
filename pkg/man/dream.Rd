@@ -32,34 +32,48 @@ INIT.pars=list(), control=list(), measurement)}
     generation \cr
     \code{nCR} \tab 3 \tab Crossover values used to generate proposals (geometric
     series). scalar \cr
-  \code{gamma} \tab 0 \tab Kurtosis parameter Bayesian Inference Scheme \cr
-  \code{steps} \tab 10 \tab Number of steps in sem \cr
-  \code{eps} \tab 5e-2 \tab Random error for ergodicity \cr
-  \code{outlierTest} \tab 'IQR_test' \tab Test used to detect outlier
+    \code{gamma} \tab 0 \tab Kurtosis parameter Bayesian Inference Scheme \cr
+    \code{steps} \tab 10 \tab Number of steps in sem \cr
+    \code{eps} \tab 5e-2 \tab Random error for ergodicity \cr
+    \code{outlierTest} \tab 'IQR_test' \tab Test used to detect outlier
     chains.
     One off: IQR_test, Grubbs_test,Mahal_test \cr
-  \code{pCR.Update} \tab \code{TRUE} \tab Whether to use adaptive tuning of crossover
+    \code{pCR.Update} \tab \code{TRUE} \tab Whether to use adaptive tuning of crossover
     values \cr
-  \code{boundHandling} \tab 'reflect' \tab Method used to handle parameter
+    \code{boundHandling} \tab 'reflect' \tab Method used to handle parameter
     values outside of parameter bounds.
     One of: "reflect", "bound", "fold", "none","rand"
-  \cr
-  \code{thin.t} \tab NA \tab Thinning interval. NA if thinning is not
-  desired \cr
-  \code{REPORT} \tab 1000 \tab Approximate number of function evaluations
+    \cr
+    
+    \code{burnin.length} \tab 0.1 \tab If \code{<1} proportion of
+    function evaluations to use as burn-in period. If \code{>1} number
+    of function evaluations to use.
+    In the burnin-period, adaptive tuning of crossover values is
+    performed if \code{pCR.Update=TRUE} and the method specified by
+    \code{outlierTest} is used to remove outliers. 
+    If outliers are detected outside the burn-in period, dream emits a
+    warning and returns to the burn-in period for another \code{burnin.length} iterations.
+    If \code{=0} there is no burn-in period, and all outlier warnings
+    are suppressed. \cr
+    
+    \code{thin.t} \tab NA \tab MCMC chain thinning interval. NA if thinning is not
+    desired \cr
+    \code{REPORT} \tab 1000 \tab Approximate number of function evaluations
     between calculation and reporting of convergence diagnostics. 0 if
     no reporting or calculation is desired.
-    Frequent calculation is likely to slow performance.
-    \code{\link{gelman.diag}} can calculate convergence statistic after completion
-  \cr
-  \code{ndraw} \tab  1e5 \tab Maximum number of function evaluations. May
+    Frequent calculation is likely to slow performance. The summary
+    function can use \code{\link{gelman.diag}} to calculate convergence statistic after completion
+    \cr
+    \code{use.multicore} \tab \code{TRUE} \tab Whether to use multicore
+    package if available. Parallelises function evaluations. \cr
+    \code{ndraw} \tab  1e5 \tab Maximum number of function evaluations. May
     terminate before convergence. \cr
-  \code{maxtime} \tab Inf \tab Maximum duration of optimization in seconds. May
+    \code{maxtime} \tab Inf \tab Maximum duration of optimization in seconds. May
     terminate before convergence.\cr
-  \code{Rthres} \tab 1.01 \tab Value of Gelman & Rubin's convergence
+    \code{Rthres} \tab 1.01 \tab Value of Gelman & Rubin's convergence
     diagnostic R value below which the sequences are considered to have
     converged, and execution is terminated. Vrugt suggests 1.2
-  \cr
+    \cr
   }
   Execution terminates when Gelman-Rubin statistic < \code{control$Rthres}, or
   \code{control$ndraw} or \code{control$maxtime} are reached
@@ -69,10 +83,16 @@ INIT.pars=list(), control=list(), measurement)}
   
   Default settings may not be sufficient for model to run. For few
   parameters, nseq may need to be increased.
-  
-  There are methods for print, summary, plot, coef
 
-  coef uses \code{\link{maxLikPars}}, a naive approach to extract the most likely parameter value.
+  If dream frequently warns that it is reentering the burn-period,
+  \code{control$burnin.length} may need to be increased.
+  
+  There are S3 methods for print, summary, plot,
+  \code{\link[=coef.dream]{coef}},
+  \code{\link[=predict.dream]{predict}},
+  simulate
+
+  coef uses \code{\link{maxLikPars}}, a naive approach to extracting the most likely parameter value.
 
 }
 \value{
@@ -84,7 +104,10 @@ INIT.pars=list(), control=list(), measurement)}
   \item{AR}{Acceptance rate for each draw. matrix n.elem x 2}
   \item{outlier}{Iterations at which chains were replaced. vector of variable length}
   \item{R.stat}{gelman.diag statistic for each variable at each step. matrix n.elem/steps x 1+ndim}
-  \item{CR}{Probability of crossover at each step. matrix n.elem/steps x 1+length(pCR)}
+  \item{CR}{Probability of crossover at each step. matrix n.elem/steps x
+    1+length(pCR)}
+  \item{in.burnin}{Boolean showing whether dream was in the burn-in
+    period at termination (see description above)}
 }
 
 \seealso{
