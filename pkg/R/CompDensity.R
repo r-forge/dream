@@ -94,6 +94,7 @@ CompDensity <- function(pars,control,FUN,func.type,
   p <- sapply(temp,function(x) x[1])
   logp <- sapply(temp,function(x) x[2])
 
+  if(class(p)!="numeric") stop("Error with multicore, set control$use.multicore=FALSE to turn it off")
   stopifnot(!any(is.na(p)))
   ##stopifnot(!any(is.na(logp))) ##Not used anyway
   return(list(p=p,logp=logp))

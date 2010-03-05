@@ -10,7 +10,7 @@
 ##'   lCR vector of length nCR
 AdaptpCR <- function(CR,delta.tot,lCR.old,control){
 
-  ##stopifnot(sum(delta.tot)>0)
+  if(!any(delta.tot>0)) stop("AdaptpCR: no changes in X, would cause NaN in pCR")
   
   ## dimensions:
   ##  CR vector of length nseq*steps

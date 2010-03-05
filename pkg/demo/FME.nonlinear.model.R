@@ -50,7 +50,8 @@ Model.y <- function(p,x) as.ts(p[1]*x/(x+p[2]))
 set.seed(456)
 
 control <- list(
-                nseq=4
+                nseq=4,
+                use.multicore=FALSE
                 ##                REPORT=0
                 ##                ndraw=1000
                 ##                Rthres=1+1e-3

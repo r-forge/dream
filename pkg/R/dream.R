@@ -82,7 +82,6 @@ dream <- function(FUN, func.type,pars,
   ##  counter.outloop [2,ndraw/nseq]. count number of outside loops
   ## counter.fun.evals [nseq,ndraw(+steps*nseq)],
   ## counter [2,ndraw/nseq] . number of generations - iterations of inner loop
-  ## iloc
 
 ############################
   ## Process parameters
@@ -155,7 +154,6 @@ dream <- function(FUN, func.type,pars,
   ## Counters
   counter.fun.evals <- NSEQ
   counter <- 2
-  iloc <- 1
   counter.outloop <- 2
   counter.thin <- 1
 
@@ -226,13 +224,13 @@ dream <- function(FUN, func.type,pars,
 
   obj$outlier<-NULL
   
-  Sequences <- array(NA, c(floor(1.25*max.counter),NDIM+2,NSEQ))
+  Sequences <- array(NA, c(max.counter,NDIM+2,NSEQ))
   if (!is.null(names(pars))) colnames(Sequences) <- c(names(pars),"p","logp")
   ## Sequences[1,] <- sapply(pars, mean) ## TODO: include?
 
   ## Check whether will save a reduced sample
   if (!is.na(control$thin.t)){
-    iloc.2 <- 0
+    counter.redseq <- 0
     Reduced.Seq <- array(NA,c(ceiling(max.counter/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
 
@@ -268,7 +266,7 @@ dream <- function(FUN, func.type,pars,
     Sequences[1,,qq] <- X[qq,]
   }
 
-  ##Save N_CR in memory and initialize delta.tot
+  ##Save pCR in memory and initialize delta.tot
   obj$CR[1,] <- c(counter.fun.evals,pCR)
   delta.tot <- rep(0,NCR)
   
@@ -313,7 +311,7 @@ dream <- function(FUN, func.type,pars,
                     func.type,control,
                     measurement
                     )
-      newgen <- tmp$newgen
+      X <- tmp$newgen ##Update X using current members of sequences. N.B. used to be separate step after Delayed Rejection
       alpha12 <- tmp$alpha
       accept <- tmp$accept
       ## stopifnot(any(accept)) #Unlikely, but possible
@@ -322,21 +320,16 @@ dream <- function(FUN, func.type,pars,
       ## accept2,ItExtra not required
 
       ## Update location in sequence and update the locations of the Sequences with the current locations
-      iloc <- iloc + 1
-      Sequences[iloc,,] <- t(newgen)
+      Sequences[counter,,] <- t(X)
 
       ## Check reduced sample collection
       if (!is.na(control$thin.t) && counter.thin == control$thin.t){
         ## Update iloc_2 and counter.thin
-        iloc.2 <- iloc.2+1
+        counter.redseq <- counter.redseq+1
         counter.thin <- 0
         ## Reduced sample collection
-        Reduced.Seq[iloc.2,,] <- t(newgen)
+        Reduced.Seq[counter.redseq,,] <- t(X)
       }
-
-      ## And update X using current members of Sequences
-      X <- newgen; rm(newgen)
-
       
       if (control$pCR.Update) {
         ## Calculate the standard deviation of each dimension of X
@@ -347,10 +340,6 @@ dream <- function(FUN, func.type,pars,
         delta.normX <- rowSums(((x.old-X[,1:NDIM])/r)^2)
         ## Use this information to update sum_p2 to update N_CR
         delta.tot <- CalcDelta(NCR,delta.tot,delta.normX,CR[,gen.number])
-
-        ##0s in delta.tot, delta.normX -> pCR has NaN in pCR.Update
-        stopifnot(any(delta.tot!=0) | any(delta.normX!=0)) 
-
       }
 
       ## Update hist.logp
@@ -374,8 +363,8 @@ dream <- function(FUN, func.type,pars,
 
     outliers <- RemOutlierChains(X,hist.logp[1:(counter-1),],control)
     
-    ## Check whether to update individual pCR values
     if (counter.fun.evals <= end.burnin) {
+      ## Check whether to update individual pCR values      
       if (control$pCR.Update) {
         ## Update pCR values
         tmp <- AdaptpCR(CR, delta.tot, lCR, control)
@@ -384,7 +373,7 @@ dream <- function(FUN, func.type,pars,
       }
       
       ## Change any outlier chains to current best value of X
-      ## TODO: matlab code doesn't match paper. Outlier removal should be within burnin period
+      ## TODO: matlab code didn't match paper. Outlier removal should be within burnin period
       
       ## Loop over each outlier chain (if length>0)
       for (out.id in outliers$chain.id){
@@ -393,7 +382,7 @@ dream <- function(FUN, func.type,pars,
         ## Added -- update hist_logp -- chain will not be considered as an outlier chain then
         hist.logp[1:(counter-1),out.id] <- hist.logp[1:(counter-1),r.idx]
         ## Jump outlier chain to r_idx -- Sequences, X
-        Sequences[iloc,1:(NDIM+2),out.id] <- X[r.idx,]
+        Sequences[(counter-1),1:(NDIM+2),out.id] <- X[r.idx,]
         X[out.id,1:(NDIM+2)] <- X[r.idx,]
         ## Add to outlier tracker
         obj$outlier <- rbind(obj$outlier,c(counter.fun.evals,out.id))
@@ -425,7 +414,7 @@ dream <- function(FUN, func.type,pars,
             
       try(
           obj$R.stat[counter.report,] <- c(counter.fun.evals,gelman.diag(
-                    as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:iloc,1:NDIM,i]))),
+                    as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:(counter-1),1:NDIM,i]))),
                        autoburnin=TRUE)$psrf[,1])
         )
       
@@ -440,7 +429,6 @@ dream <- function(FUN, func.type,pars,
     
     ## Update the counter.outloop
     counter.outloop = counter.outloop + 1
-
       
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
@@ -459,22 +447,23 @@ dream <- function(FUN, func.type,pars,
    ## obj$EXITFLAG <- 4
   }
 
-  obj$X <- X
+
 
   ## Trim outputs to collected data - remove extra rows
   ## Convert sequences to mcmc objects
-  Sequences <- Sequences[1:iloc,,]
+  Sequences <- Sequences[1:(counter-1),,]
   obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
   if (!is.na(control$thin.t)){
-    Reduced.Seq <- Reduced.Seq[1:iloc.2,,]
+    Reduced.Seq <- Reduced.Seq[1:counter.redseq,,]
     obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ,function(i) mcmc(
                                                                Reduced.Seq[,1:NDIM,i],
                                                                    start=1,
-                                                                   end=iloc,
+                                                                   end=counter-1,
                                                                    thin=control$thin.t)
                                            ))
   }
-
+  
+  obj$X <- X
   obj$R.stat <- obj$R.stat[1:counter.report,,drop=FALSE]
   obj$AR <- obj$AR[1:(counter-1),]
   obj$CR <- obj$CR[1:(counter.outloop-1),]
