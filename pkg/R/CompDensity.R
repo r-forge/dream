@@ -90,6 +90,7 @@ CompDensity <- function(pars,control,FUN,func.type,
   }
   
   if (control$use.multicore) temp <- mclapply(1:nrow(pars),do.calc,mc.preschedule=FALSE)
+  else if (control$use.foreach) temp <- foreach(ii=1:nrow(pars)) %do% do.calc(ii)
   else temp <- lapply(1:nrow(pars),do.calc)
   
   p <- sapply(temp,function(x) x[1])

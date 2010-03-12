@@ -64,7 +64,11 @@ INIT.pars=list(), control=list(), measurement)}
     Frequent calculation is likely to slow performance. The summary
     function can use \code{\link{gelman.diag}} to calculate convergence statistic after completion
     \cr
-    \code{use.multicore} \tab \code{TRUE} \tab Whether to use multicore
+    \code{use.foreach} \tab \code{TRUE} \tab Whether to use foreach
+    package if available. For parallelisation of function evaluations, a
+    parallel backend must be registered from one of the doMC, doMPI,
+    doSNOW packages. \cr
+    \code{use.multicore} \tab \code{FALSE} \tab Whether to use multicore
     package if available. Parallelises function evaluations. \cr
     \code{ndraw} \tab  1e5 \tab Maximum number of function evaluations. May
     terminate before convergence. \cr

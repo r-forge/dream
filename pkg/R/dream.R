@@ -18,7 +18,8 @@ dreamDefaults <- function()
          thin.t=NA,            ## parameter for reduced sample collection
 ### Efficiency improvements
          REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none
-         use.multicore=TRUE,
+         use.multicore=FALSE,
+         use.foreach=TRUE,
 ### Parameters with auto-set values
          ndim=NA,			 ## number of parameters (automatically set from length of pars)
          DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
@@ -135,6 +136,7 @@ dream <- function(FUN, func.type,pars,
   if (control$burnin.length<1) control$burnin.length <- control$burnin.length*control$ndraw
 
   if (control$use.multicore) control$use.multicore <- require(multicore)
+  if (control$use.foreach) control$use.foreach <- require(foreach)
   
   ## Check validity of settings
   if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
