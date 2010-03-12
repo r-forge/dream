@@ -45,6 +45,7 @@ CompDensity <- function(pars,control,FUN,func.type,
            ## Model directly computes posterior density
            posterior.density={
              p <- modpred
+		 if (any(modpred<=0)) stop("Posterior density returned by FUN should be strictly positive. Otherwise use logposterior.density?")
              logp <- log(modpred)
            },
            ## Model computes output simulation           

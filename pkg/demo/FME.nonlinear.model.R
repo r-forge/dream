@@ -120,7 +120,6 @@ lines(Obs$x,predict(dd,method="mean"),col="red")
 lines(Obs$x,predict(dd,method="median"),col="orange")
 plotCIs(Obs$x,predict(dd,method="CI"),col="black")
 
-
 ##Obs2
 plotFME()
 lines(Obs2$x,predict(dd,list(x=Obs2$x)),col="blue")

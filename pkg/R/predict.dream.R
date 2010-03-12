@@ -30,12 +30,13 @@ simulate.dream <- function(object,nsim=1000,seed=NULL,...){
 ##' using various methods of summarising the posterior parameter and output distributions
 ##' @param object dream object
 ##' @param newdata. new FUN.pars list. If NULL, use object's.
+##' @param newFUN. a new function to run with same arguments as the original FUN
 ##' @param method CI or a \code{\link{method}} of coef
 ##' @param level. Requested two-sided level of confidence. For CI method.
 ##' @param last.prop Proportion of MCMC chains to keep
 ##' @param use.thinned Whether to use existing thinned chains
-##' @return  data frame with each column corresponding to a returned vector
-predict.dream <- function(object,newdata=NULL,
+##' @return  whatever FUN returns (either numeric, ts or list). For CI, either a matrix with upper and lower bound or list of matrices.
+predict.dream <- function(object,newdata=NULL,newFUN=NULL,
                           method="maxLik",level=0.99,
                           last.prop=0.5,use.thinned=TRUE,...
                           ){
@@ -44,16 +45,26 @@ predict.dream <- function(object,newdata=NULL,
   stopifnot(is.null(newdata) || is.list(newdata))
   stopifnot(!"CI" %in% method || !is.null(level))
   stopifnot(last.prop>0)
+
+  
+  if (use.thinned & is.null(object$Reduced.Seq)) {
+    warning("Attempted to use.thinned when no thinned chains available: setting use.thinned=FALSE")
+    use.thinned <- FALSE
+  }
   
 ###
   ## Fetch function and parameters from dream object
+
+  if (!is.null(newFUN) & !identical(formals(eval(object$call$FUN)),formals(newFUN))) stop("FUN used in dream and newFUN must have same parameters")
+  if (is.null(newFUN)) newFUN <- eval(object$call$FUN)
   
   if (is.null(newdata)) newdata <- eval(object$call$FUN.pars)
-  par.name <- names(formals(eval(object$call$FUN)))[1]
+  
+  par.name <- names(formals(newFUN))[1]
   
   wrap <- function(p) {
     newdata[[par.name]] <- p
-    as.numeric(do.call(eval(object$call$FUN),newdata))
+    do.call(newFUN,newdata)
   }
 ###
   
@@ -67,7 +78,17 @@ predict.dream <- function(object,newdata=NULL,
     
     ff <- apply(as.matrix(sss),1,wrap)
     
-    return(t(apply(ff,1,quantile,c((1-level)/2,1-(1-level)/2))))
+    if (inherits(ff,"matrix")) return(t(apply(ff,1,quantile,c((1-level)/2,1-(1-level)/2))))
+    else if (inherits(ff,"list")) {
+      ## Calculate CI for each series separately
+      ## list is of format list[[run.number]][[series.number]]=numeric
+      return(
+             lapply(1:length(ff[[1]]),function(s){
+               ff.s <- sapply(ff,function(x) x[[s]])
+               t(apply(ff.s,1,quantile,c((1-level)/2,1-(1-level)/2)))
+             })
+             )
+    } else stop("Unexpected output from application of newFUN to matrix of parameters. newFUN should return a numeric or list of numerics")
     
   } else {
     return(wrap(coef(object,method=method,
