@@ -13,8 +13,8 @@ plot.dream <- function(x,interactive=TRUE,...){
   
   plot(ss)
 
-  xyplot(ss)
-  densityplot(ss)
+  print(xyplot(ss))
+  print(densityplot(ss))
 
   ## Acceptance rate
   plot(table(x$AR[,2]),main="Distribution of % acceptance rate")
@@ -29,7 +29,7 @@ plot.dream <- function(x,interactive=TRUE,...){
 
   ## Multi-variate density for first chain
   
-  splom(as.data.frame(x$Sequences[[1]]),
+  print(splom(as.data.frame(x$Sequences[[1]]),
       upper.panel = panel.smoothScatter, nrpoints = 0,
       lower.panel = function(x, y, ...) {
           panel.grid(-1, -1)
@@ -37,6 +37,6 @@ plot.dream <- function(x,interactive=TRUE,...){
           panel.loess(x, y, span = 2/3, lwd = 2)
           grid::grid.text(paste("cor =", round(cor(x, y),2)),
                           y = 0.1)
-      })
+      }))
   
 }##plot.dream

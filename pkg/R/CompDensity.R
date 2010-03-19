@@ -21,7 +21,7 @@
 ## TODO: more appropriate naming of options?
 ## TODO: allow shortenings of option?
 CompDensity <- function(pars,control,FUN,func.type,
-                        measurement=NULL,...){
+                        measurement=NULL,FUN.pars=NULL){
 
   ## Should be guaranteed by dream
   ## stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
@@ -35,11 +35,11 @@ CompDensity <- function(pars,control,FUN,func.type,
   ##  SSR scalar
   ## temp. list of length nseq with elements of length 2: p and logp
 
-  do.calc <- function (ii){
-  
+  do.calc <- function (pp,control,MFUN,func.type,measurement,FUN.pars){
     ## Call model to generate simulated data
-    ## TODO: correct use of optional pars?
-    modpred <- FUN(pars[ii,],...)
+    FUN.pars[[names(formals(FUN))[1]]] <- pp
+    modpred <- do.call(MFUN,FUN.pars)
+    ##stopifnot(inherits(modpred,"numeric"))
 
     switch(func.type,
            ## Model directly computes posterior density
@@ -61,7 +61,6 @@ CompDensity <- function(pars,control,FUN,func.type,
            ## Model computes output simulation
            ## TODO: may need as.numeric
            calc.rmse={
-             
              err <- as.numeric(measurement$data-modpred)
              ## Derive the sum of squared error
              SSR <- sum(abs(err)^(2/(1+control$gamma)))
@@ -88,15 +87,32 @@ CompDensity <- function(pars,control,FUN,func.type,
            }) ##switch
     c(p,logp)
   }
-  
-  if (control$use.multicore) temp <- mclapply(1:nrow(pars),do.calc,mc.preschedule=FALSE)
-  else if (control$use.foreach) temp <- foreach(ii=1:nrow(pars)) %do% do.calc(ii)
-  else temp <- lapply(1:nrow(pars),do.calc)
+
+  pars <- lapply(1:nrow(pars),function(x) pars[x,])
+  switch(control$parallel,
+         "multicore"={
+           temp <- mclapply(pars,do.calc,control=control,MFUN=FUN,func.type=func.type,
+                            measurement=measurement,FUN.pars=FUN.pars,
+                            mc.preschedule=FALSE)
+         },
+         "foreach"={
+           ## foreach(pp=iter(pars,by="row")) %dopar%
+           temp <- foreach(pp=pars) %dopar% do.calc(pp,control=control,MFUN=FUN,func.type=func.type,
+                             measurement=measurement,FUN.pars=FUN.pars)
+         },
+         "snow"={
+           temp <- clusterApplyLB(cl=cl,x=pars,fun=do.calc,
+                                  control=control,MFUN=FUN,func.type=func.type,
+                                  measurement=measurement,FUN.pars=FUN.pars)
+         },
+         temp <- lapply(pars,FUN=do.calc,control=control,MFUN=FUN,func.type=func.type,
+                        measurement=measurement,FUN.pars=FUN.pars)
+         )##switch parallel
   
   p <- sapply(temp,function(x) x[1])
   logp <- sapply(temp,function(x) x[2])
 
-  if(class(p)!="numeric") stop("Error with multicore, set control$use.multicore=FALSE to turn it off")
+  if(class(p)!="numeric") stop(sprintf("Expected class numeric, got class %s. Error with multicore? Set control$use.multicore=FALSE to turn it off",class(p)))
   stopifnot(!any(is.na(p)))
   ##stopifnot(!any(is.na(logp))) ##Not used anyway
   return(list(p=p,logp=logp))

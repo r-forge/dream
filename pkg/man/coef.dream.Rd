@@ -16,3 +16,9 @@
     vector=f(dream object)}
   \item{...}{Unused. Matches generic}
 }
+\details{
+  e.g. of using arbitrary function for method: 20\% quantile.
+  \code{
+    coef(object,method=function(sss) apply(as.matrix(sss),2,quantile,0.2)
+  }
+}

@@ -44,13 +44,13 @@ lines(Model(p=P$par,x=0:375))
 unloadNamespace("dream")
 library(dream)
 
-
-Model.y <- function(p,x) as.ts(p[1]*x/(x+p[2]))
+Model.y <- function(p,x) p[1]*x/(x+p[2])
 
 set.seed(456)
 
 control <- list(
-                nseq=4
+                nseq=4,
+                parallel="none"
                 ##                REPORT=0
                 ##                ndraw=1000
                 ##                Rthres=1+1e-3
@@ -58,16 +58,6 @@ control <- list(
 
 pars <- list(p1=c(0,1),p2=c(0,100))
 
-
-## Optional parallelisation of function evaluations
-## Uses foreach, which allows Rmpi, SNOW or multicore to be registered,
-##   or just normal sequential evaluation
-## Example here is for SNOW with a socket cluster, which doesn't require any other software or setup
-if (require(doSNOW)){
-  cl <- makeCluster(c("localhost","localhost"), type = "SOCK")
-  registerDoSNOW(cl)
-}
-  
 dd <- dream(
             FUN=Model.y, func.type="calc.rmse",
             pars = pars,
@@ -78,8 +68,6 @@ dd <- dream(
             measurement=list(data=obs.all$y),
             control = control
             )
-
-if (require(doSNOW))  stopCluster(cl)
 
 dd
 

@@ -18,8 +18,7 @@ dreamDefaults <- function()
          thin.t=NA,            ## parameter for reduced sample collection
 ### Efficiency improvements
          REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none
-         use.multicore=FALSE,
-         use.foreach=TRUE,
+         parallel=c("multicore","snow","foreach"),   ##packages to use for parallel in order of preference: multicore,snow,foreach
 ### Parameters with auto-set values
          ndim=NA,			 ## number of parameters (automatically set from length of pars)
          DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
@@ -101,16 +100,19 @@ dream <- function(FUN, func.type,pars,
   ## Check INIT and FUN have required extra parameters in INIT.pars & FUN.pars
   req.args.init <- names(formals(INIT))
   req.args.FUN <- names(formals(FUN))
-  req.args.FUN <- req.args.FUN[2:length(req.args.FUN)] ##optional pars only
-  
-  if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars))))
-    stop(paste(c("INIT Missing extra arguments:",
-                 req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),
-               sep=" ",collapse=" "))
 
-  if(!all(req.args.FUN %in% names(FUN.pars))) stop(paste(c("FUN Missing extra arguments:",
-                                                           req.args.FUN[!req.args.FUN %in% c(names(FUN.pars))]),
-                                                         collapse=" "))
+    if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars))))
+      stop(paste(c("INIT Missing extra arguments:",
+                   req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),
+                 sep=" ",collapse=" "))
+
+  if (length(req.args.FUN)<length(FUN.pars)+1) stop("Some FUN.pars are not required by FUN")
+  if (length(req.args.FUN)>1){
+    req.args.FUN <- req.args.FUN[2:length(req.args.FUN)] ##optional pars only
+    if(!all(req.args.FUN %in% names(FUN.pars))) stop(paste(c("FUN Missing extra arguments:",
+                                                             req.args.FUN[!req.args.FUN %in% c(names(FUN.pars))]),
+                                                           collapse=" "))
+  }
   
   ## Update default settings with supplied settings
 
@@ -135,8 +137,19 @@ dream <- function(FUN, func.type,pars,
 
   if (control$burnin.length<1) control$burnin.length <- control$burnin.length*control$ndraw
 
-  if (control$use.multicore) control$use.multicore <- require(multicore)
-  if (control$use.foreach) control$use.foreach <- require(foreach)
+  ##Choice of parallel backend
+  if (control$parallel!="none"){
+    parallel <- "none"
+    for (p in control$parallel) {
+      if (require(p,character.only=TRUE)) {
+        parallel <- p
+        break
+      }
+    }
+    if (parallel=="none") warning(sprintf("Requested parallel backends not available (%s)",paste(control$parallel,collapse=",")))
+    control$parallel <- parallel
+  }
+
   
   ## Check validity of settings
   if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
@@ -252,12 +265,18 @@ dream <- function(FUN, func.type,pars,
 
   x <- do.call(INIT,modifyList(INIT.pars,list(pars=pars,nseq=NSEQ)))
 
+  ## Test that FUN returns numeric
+  test.pars <- FUN.pars
+  test.pars[[names(formals(FUN))[1]]] <- x[1,]
+  modpred <- do.call(FUN,test.pars)
+  if (!inherits(modpred,"numeric")) stop(sprintf("Result of FUN should be of class numeric, not %s",class(modpred)))
+
   ## make each element of pars a list and extract lower / upper
   lower <- sapply(pars, function(x) min(x[[1]]))
   upper <- sapply(pars, function(x) max(x[[1]]))
 
   ##Step 2: Calculate posterior density associated with each value in x
-  tmp<-do.call(CompDensity,modifyList(FUN.pars,list(pars=x,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
+  tmp<-do.call(CompDensity,list(pars=x,control=control,FUN=FUN,func.type=func.type,measurement=measurement,FUN.pars=FUN.pars))
 
   ##Save the initial population, density and log density in one list X
   X<-cbind(x=x,p=tmp$p,logp=tmp$logp)
@@ -288,7 +307,7 @@ dream <- function(FUN, func.type,pars,
       counter.thin <- counter.thin + 1 
 
       ## Define the current locations and associated posterior densities
-      x.old <- X[,1:NDIM]
+      x.old <- X[,1:NDIM,drop=FALSE]
       p.old <- X[,NDIM+1]
       logp.old <- X[,NDIM+2]
 
@@ -303,7 +322,7 @@ dream <- function(FUN, func.type,pars,
       CR[,gen.number] <- tmp$CR
 
       ## Now compute the likelihood of the new points
-      tmp<-do.call(CompDensity,modifyList(FUN.pars,list(pars=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement)))
+      tmp<-do.call(CompDensity,list(pars=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement,FUN.pars=FUN.pars))
       p.new <- tmp$p
       logp.new <- tmp$logp
 
@@ -337,9 +356,9 @@ dream <- function(FUN, func.type,pars,
         ## Calculate the standard deviation of each dimension of X
         ## TODO: matlab syntax is unclear - seems to be columnwise
         ## element-wise: sd(c(X[,1:NDIM]))
-        r <- apply(X[,1:NDIM],2,sd)
+        r <- apply(X[,1:NDIM,drop=FALSE],2,sd)
         ## Compute the Euclidean distance between new X and old X
-        delta.normX <- rowSums(((x.old-X[,1:NDIM])/r)^2)
+        delta.normX <- rowSums(((x.old-X[,1:NDIM,drop=FALSE])/r)^2)
         ## Use this information to update sum_p2 to update N_CR
         delta.tot <- CalcDelta(NCR,delta.tot,delta.normX,CR[,gen.number])
       }

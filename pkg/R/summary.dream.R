@@ -1,6 +1,8 @@
 
 summary.dream <- function(object,...){
 
+  coda.sum <- summary(window(object$Sequences, start = end(object$Sequences)/2 + 1))
+  
   cat(sprintf("
 Exit message:  %s
 Num fun evals: %d
@@ -28,11 +30,12 @@ Final R.stats:
   cat("
 CODA summary for last 50% of MCMC chains:
 ")
-  print(summary(window(object$Sequences, start = end(object$Sequences)/2 + 1)))
+
+  print(coda.sum)
 
   cat("
 Acceptance Rate
 ")
-  summary(object$AR[,2])
-  
+  print(summary(object$AR[,2]))
+
 } ##summary.dream
