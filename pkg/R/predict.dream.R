@@ -77,8 +77,9 @@ predict.dream <- function(object,newdata=NULL,newFUN=NULL,
     if (last.prop<1) sss <- window(sss, start = end(sss)*(1-last.prop) + 1)
     
     ff <- apply(as.matrix(sss),1,wrap)
-    
+
     if (inherits(ff,"matrix")) return(t(apply(ff,1,quantile,c((1-level)/2,1-(1-level)/2))))
+    else if (inherits(ff,"numeric")) return(quantile(ff,c((1-level)/2,1-(1-level)/2)))
     else if (inherits(ff,"list")) {
       ## Calculate CI for each series separately
       ## list is of format list[[run.number]][[series.number]]=numeric

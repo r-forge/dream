@@ -50,6 +50,7 @@ set.seed(456)
 
 control <- list(
                 nseq=4,
+                thin.t=10,
                 parallel="none"
                 ##                REPORT=0
                 ##                ndraw=1000

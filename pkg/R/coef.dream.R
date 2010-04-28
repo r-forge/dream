@@ -22,7 +22,7 @@ coef.dream <- function(object,last.prop=.5,use.thinned=FALSE,
   if (class(method)!="function") {
     method <- switch(
                      match.arg(method),
-                     "maxLik"=maxLikPars,
+                     "maxLik"=maxLikCoda,
                      "mean"=function(sss) colMeans(as.matrix(sss)),
                      "median"=function(sss) apply(as.matrix(sss),2,median)
                      )

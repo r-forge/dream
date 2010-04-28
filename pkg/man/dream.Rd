@@ -90,12 +90,15 @@ INIT.pars=list(), control=list(), measurement)}
   If dream frequently warns that it is reentering the burn-period,
   \code{control$burnin.length} may need to be increased.
   
-  There are S3 methods for print, summary, plot,
+  There are S3 methods for print, summary,
+  \code{\link[=plot.dream]{plot}},
   \code{\link[=coef.dream]{coef}},
   \code{\link[=predict.dream]{predict}},
   simulate
 
-  coef uses \code{\link{maxLikPars}}, a naive approach to extracting the most likely parameter value.
+  coef uses \code{\link{maxLikPars}}, a naive approach to extracting the
+  most likely parameter value, using the bandwith parameters used for
+  CODA density plots.
 
 }
 \value{

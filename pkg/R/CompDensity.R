@@ -112,7 +112,10 @@ CompDensity <- function(pars,control,FUN,func.type,
   p <- sapply(temp,function(x) x[1])
   logp <- sapply(temp,function(x) x[2])
 
-  if(class(p)!="numeric") stop(sprintf("Expected class numeric, got class %s. Error with multicore? Set control$use.multicore=FALSE to turn it off",class(p)))
+  if(class(p)!="numeric") {
+    print(p)
+    stop(sprintf("Expected class numeric, got class %s. Error with multicore? Set control$parallel='none' to not use parallelisation",class(p)))
+  }
   stopifnot(!any(is.na(p)))
   ##stopifnot(!any(is.na(logp))) ##Not used anyway
   return(list(p=p,logp=logp))
