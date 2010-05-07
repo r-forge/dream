@@ -1,24 +1,69 @@
 \name{dream}
 \alias{dream}
 \title{DiffeRential Evolution Adaptive Metropolis (DREAM)}
-\usage{dream(FUN, func.type, pars, FUN.pars=list(), INIT=LHSInit,
-INIT.pars=list(), control=list(), measurement)}
+\usage{
+
+dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
+      INIT.pars = list(), control = list(), measurement)
+
+}
 \description{
   Efficient global MCMC even in high-dimensional spaces.
   From J.A. Vrugt, C.J.F. ter Braak et al.
 }
 \arguments{
-  \item{FUN}{model function with first argument a vector of parameter values of length ndim}
-  \item{func.type}{type of value FUN returns.
-    one of: posterior.density, logposterior.density,calc.loglik,calc.rmse,calc.weighted.rmse}
-  \item{pars}{a list of variable ranges. Any names will be propagated to output}
-  \item{FUN.pars}{A named list of extra arguments to FUN}
-  \item{INIT}{A function f(pars,nseq,...) returning an nseq x ndim
-    matrix of initial parameter values}
-  \item{INIT.pars}{A named list of extra arguments to INIT}
-  \item{control}{list of settings for dream. see below}
-  \item{measurement}{Required parameter for func.types starting with calc. list with
-    element data, a vector containing observed dependent variable values.
+  \item{FUN}{
+    model function with first argument a vector of parameter values of
+    length ndim.
+  }
+  \item{func.type}{
+    type of value \code{FUN} returns. One of:
+    \describe{
+      \item{\code{"posterior.density"}}{
+        \code{FUN} returns the likelihood.
+      }
+      \item{\code{"logposterior.density"}}{
+        \code{FUN} returns the log-likelihood.
+      }
+      \item{\code{"calc.loglik"}}{
+        \code{FUN} returns the residual vector to be compared with
+        \code{measurement}.
+        The exponential power density function of Box and Tiao (1973) is
+        used, based on the parameter \code{control$gamma}, and
+        \code{measurement$N} and \code{measurement$sigma}.
+      }
+      \item{\code{"calc.rmse"}}{
+        \code{FUN} returns the residual vector to be compared with
+        \code{measurement}. The likelihood is calculated as the sum of
+        squared residuals to a power \code{-N}, adjusted by
+        \code{control$gamma}. 
+      }
+      \item{\code{"calc.weighted.rmse"}}{
+        similar to \code{"calc.rmse"} but weighted with
+        \code{measurement$sigma}. 
+      }
+    }
+  }
+  \item{pars}{
+    a list of variable ranges. Any names will be propagated to output.
+  }
+  \item{FUN.pars}{
+    a list of any extra arguments to be passed to \code{FUN}.
+  }
+  \item{INIT}{
+    A function f(pars,nseq,...) returning an \code{nseq x ndim}
+    matrix of initial parameter values. 
+  }
+  \item{INIT.pars}{
+    a list of any extra arguments to be passed to the \code{INIT} function.
+  }
+  \item{control}{
+    list of settings for the DREAM algorithm. see below.
+  }
+  \item{measurement}{
+    Required parameter for \code{func.type}s starting with \code{calc}.
+    A list with element \code{data}, a vector containing observed
+    dependent variable values. 
   }
 }
 \details{
@@ -37,7 +82,7 @@ INIT.pars=list(), control=list(), measurement)}
     \code{eps} \tab 5e-2 \tab Random error for ergodicity \cr
     \code{outlierTest} \tab 'IQR_test' \tab Test used to detect outlier
     chains.
-    One off: IQR_test, Grubbs_test,Mahal_test \cr
+    One of: IQR_test, Grubbs_test, Mahal_test \cr
     \code{pCR.Update} \tab \code{TRUE} \tab Whether to use adaptive tuning of crossover
     values \cr
     \code{boundHandling} \tab 'reflect' \tab Method used to handle parameter
@@ -64,10 +109,10 @@ INIT.pars=list(), control=list(), measurement)}
     Frequent calculation is likely to slow performance. The summary
     function can use \code{\link{gelman.diag}} to calculate convergence statistic after completion
     \cr
-    \code{parallel} \tab multicore, snow, foreach \tab Character vector
+    \code{parallel} \tab \code{"none"} \tab Character vector
     of packages to
     use for parallelisation of function evaluations, in order of
-    preference. Set to \code{"none"} to not parallelise. For foreach, a backend must be registered from one of the doMC, doMPI,
+    preference. Options are \code{"multicore", "snow", "foreach"}. For foreach, a backend must be registered from one of the doMC, doMPI,
     doSNOW packages. \cr
     \code{ndraw} \tab  1e5 \tab Maximum number of function evaluations. May
     terminate before convergence. \cr
@@ -114,6 +159,9 @@ INIT.pars=list(), control=list(), measurement)}
     1+length(pCR)}
   \item{in.burnin}{Boolean showing whether dream was in the burn-in
     period at termination (see description above)}
+  \item{fun.evals}{Total number of function evaluations.}
+  \item{time}{running time (wall time) in seconds.}
+  \item{EXITMSG}{a message about the stopping condition.}
 }
 
 \seealso{
@@ -128,15 +176,17 @@ INIT.pars=list(), control=list(), measurement)}
   }
 
 \references{
-
-  Accelerating Markov Chain Monte Carlo Simulation by Differential Evolution with Self-Adaptive Randomized Subspace Sampling
-Jasper A. Vrugt, C.J.F. ter Braak, C.G.H. Diks, Bruce A. Robinson, James M. Hyman and Dave Higdon
- International Journal of Nonlinear Sciences and Numerical Simulation
- (in press 2009)
-
- Equifinality of formal (DREAM) and informal (GLUE)
-Bayesian approaches in hydrologic modeling?
-Jasper A. Vrugt, Cajo J. F. ter Braak, Hoshin V. Gupta, Bruce A. Robinson
-Stoch Environ Res Risk Assess (2009) 23:1011\2261026
-DOI 10.1007/s00477-008-0274-y
-  }
+  
+  Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Robinson, B. A.,
+  Hyman, J. M., Higdon, D., 2009. Accelerating markov chain monte carlo
+  simulation by differential evolution with self-adaptive randomized
+  subspace sampling. \emph{International Journal of Nonlinear Sciences
+  and Numerical Simulation} 10 (3), 273-290. 
+ 
+  Vrugt, J. A., Braak, C. J. F., Gupta, H. V., Robinson, B. A.,
+  2009. Equifinality of formal (DREAM) and informal (GLUE) Bayesian
+  approaches in hydrologic modeling?
+  \emph{Stochastic Environmental Research and Risk Assessment} 23 (7), 1011--1026. 
+  \url{http://dx.doi.org/10.1007/s00477-008-0274-y}
+  
+}

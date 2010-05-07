@@ -18,7 +18,7 @@ dreamDefaults <- function()
          thin.t=NA,            ## parameter for reduced sample collection
 ### Efficiency improvements
          REPORT = 1000,            ## approximate number of function evaluations between reports. >0. 0=none
-         parallel=c("multicore","snow","foreach"),   ##packages to use for parallel in order of preference: multicore,snow,foreach
+         parallel = "none",   ##packages to use for parallel in order of preference: multicore,snow,foreach
 ### Parameters with auto-set values
          ndim=NA,			 ## number of parameters (automatically set from length of pars)
          DEpairs = NA,          ## Number of DEpairs. defaults to max val floor((nseq-1)/2)
@@ -322,7 +322,7 @@ dream <- function(FUN, func.type,pars,
       CR[,gen.number] <- tmp$CR
 
       ## Now compute the likelihood of the new points
-      tmp<-do.call(CompDensity,list(pars=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement,FUN.pars=FUN.pars))
+      tmp <- CompDensity(pars=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement,FUN.pars=FUN.pars)
       p.new <- tmp$p
       logp.new <- tmp$logp
 
@@ -433,11 +433,14 @@ dream <- function(FUN, func.type,pars,
 
       counter.report <- counter.report+1
             
-      try(
+      try({
           obj$R.stat[counter.report,] <- c(counter.fun.evals,gelman.diag(
                     as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:(counter-1),1:NDIM,i]))),
                        autoburnin=TRUE)$psrf[,1])
-        )
+          if (counter.report == 1)
+              message(format(colnames(obj$R.stat), width = 5))
+          message(format(obj$R.stat[counter.report,], width = 5, digits = 4))
+      })
       
       if (all(!is.na(obj$R.stat[counter.report,])) &&
           all(obj$R.stat[counter.report,-1]<control$Rthres)) {
@@ -489,8 +492,9 @@ dream <- function(FUN, func.type,pars,
   obj$AR <- obj$AR[1:(counter-1),]
   obj$CR <- obj$CR[1:(counter.outloop-1),]
   
-  ## store number of function evaluations
   ## store number of iterations
+  obj$iterations <- counter.outloop
+  ## store number of function evaluations
   obj$fun.evals <- counter.fun.evals
   ## store the amount of time taken
   obj$time <- toc

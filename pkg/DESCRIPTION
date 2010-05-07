@@ -2,7 +2,7 @@ Package: dream
 Version: 0.2-0
 Date: 2010-02-19
 Title: DiffeRential Evolution Adaptive Metropolis
-Author: Jasper Vrugt, CJF ter Braak, et al. R port by Joseph Guillaume.
+Author: Jasper Vrugt, CJF ter Braak, et al. (R port by Joseph Guillaume)
 Maintainer: Joseph Guillaume <joseph.guillaume@anu.edu.au>
 Description: Efficient global MCMC even in high-dimensional spaces.
   Based on the original MATLAB code written by Jasper Vrugt.
