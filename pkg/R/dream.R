@@ -92,6 +92,8 @@ dream <- function(FUN, func.type,pars,
   stopifnot(is.list(pars))
   stopifnot(length(pars) > 0)
   pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
+  if (is.null(names(pars)))
+      names(pars) <- paste("p", 1:length(pars), sep = "")
   stopifnot(is.list(control))
   stopifnot(func.type %in% c("calc.rmse","calc.loglik","calc.weighted.rmse","posterior.density","logposterior.density"))
   stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
@@ -188,7 +190,7 @@ dream <- function(FUN, func.type,pars,
   for (zz in 1:control$DEpairs) Table.JumpRate[,zz] <- 2.38/sqrt(2*zz*1:NDIM)
   
   ## Initialize the array that contains the history of the log_density of each chain
-  hist.logp<-matrix(NA,max.counter,NSEQ)
+  hist.logp <- matrix(NA_real_,max.counter,NSEQ)
   
   if (control$pCR.Update){
     ## Calculate multinomial probabilities of each of the nCR CR values
@@ -223,15 +225,14 @@ dream <- function(FUN, func.type,pars,
   ## counter.fun.evals + AR at each step
   obj$AR<-matrix(NA,max.counter,2)
   obj$AR[1,2]<-NSEQ-1 ##Number if only one rejected
-  colnames(obj$AR) <- c("fun.evals","AR")
+  colnames(obj$AR) <- c("fun.evals", "AR")
   
   ##counter.fun.evals + R statistic for each variable at each step
   ## TODO: now using counter.report
   obj$R.stat<-matrix(NA,max.counter.outloop,NDIM+1)
   ##  n<10 matlab: -2 * ones(1,MCMCPar.n);
   obj$R.stat[1,] <- c(counter.fun.evals,rep(-2,NDIM))
-  if (!is.null(names(pars))) colnames(obj$R.stat) <- c("fun.evals",names(pars))
-  else   colnames(obj$R.stat) <- c("fun.evals",paste("p",1:length(pars),sep=""))
+  colnames(obj$R.stat) <- c("fun.evals", names(pars))
 
   ##counter.fun.evals + pCR for each CR
   obj$CR <- matrix(NA,max.counter.outloop,length(pCR)+1)
@@ -239,14 +240,14 @@ dream <- function(FUN, func.type,pars,
 
   obj$outlier<-NULL
   
-  Sequences <- array(NA, c(max.counter,NDIM+2,NSEQ))
-  if (!is.null(names(pars))) colnames(Sequences) <- c(names(pars),"p","logp")
+  Sequences <- array(NA_real_, c(max.counter,NDIM+2,NSEQ))
+  colnames(Sequences) <- c(names(pars), "p", "logp")
   ## Sequences[1,] <- sapply(pars, mean) ## TODO: include?
 
   ## Check whether will save a reduced sample
   if (!is.na(control$thin.t)){
     counter.redseq <- 0
-    Reduced.Seq <- array(NA,c(ceiling(max.counter/control$thin.t),NDIM+2,NSEQ))
+    Reduced.Seq <- array(NA_real_,c(ceiling(max.counter/control$thin.t),NDIM+2,NSEQ))
   } else Reduced.Seq <- NULL
 
 ############################
@@ -280,8 +281,8 @@ dream <- function(FUN, func.type,pars,
 
   ##Save the initial population, density and log density in one list X
   X<-cbind(x=x,p=tmp$p,logp=tmp$logp)
-  if (!is.null(names(pars))) colnames(X) <- c(names(pars),"p","logp")
-    
+  colnames(X) <- c(names(pars), "p", "logp")
+  
   ##Initialise the sequences
   for (qq in 1:NSEQ){
     Sequences[1,,qq] <- X[qq,]
@@ -486,11 +487,13 @@ dream <- function(FUN, func.type,pars,
                                                                    thin=control$thin.t)
                                            ))
   }
-  
+
+  ## TODO: make these 'ts' objects and sync with Reduced.Seq by thinning
   obj$X <- X
   obj$R.stat <- obj$R.stat[1:counter.report,,drop=FALSE]
-  obj$AR <- obj$AR[1:(counter-1),]
-  obj$CR <- obj$CR[1:(counter.outloop-1),]
+  obj$hist.logp <- hist.logp[1:(counter-1),,drop=FALSE]
+  obj$AR <- obj$AR[1:(counter-1),,drop=FALSE]
+  obj$CR <- obj$CR[1:(counter.outloop-1),,drop=FALSE]
   
   ## store number of iterations
   obj$iterations <- counter.outloop

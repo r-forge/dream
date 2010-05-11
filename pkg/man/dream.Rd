@@ -148,17 +148,18 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
 }
 \value{
   A list with elements:
-  \item{X}{converged nseq points in parameter space. matrix nseq x ndim}
-  \item{Sequences}{ \code{\link{mcmc.list}}. nseq mcmc elements of ndim variables}
-  \item{Reduced.Seq}{ \code{\link{mcmc.list}}. nseq mcmc elements of ndim
-    variables, if \code{control$thin.t!=NA}}
-  \item{AR}{Acceptance rate for each draw. matrix n.elem x 2}
+  \item{X}{converged nseq points in parameter space. matrix \code{nseq x ndim}.}
+  \item{Sequences}{ \code{\link{mcmc.list}}. \code{nseq} mcmc elements of \code{ndim} variables.}
+  \item{Reduced.Seq}{ \code{\link{mcmc.list}}. \code{nseq} mcmc elements of \code{ndim}
+    variables, if \code{control$thin.t!=NA}.}
+  \item{hist.logp}{History of log(\var{p}) values. matrix \code{nseq x n.elem}.}
+  \item{AR}{Acceptance rate for each draw. matrix \code{n.elem x 2}.}
   \item{outlier}{Iterations at which chains were replaced. vector of variable length}
-  \item{R.stat}{gelman.diag statistic for each variable at each step. matrix n.elem/steps x 1+ndim}
-  \item{CR}{Probability of crossover at each step. matrix n.elem/steps x
-    1+length(pCR)}
+  \item{R.stat}{gelman.diag statistic for each variable at each step. matrix \code{n.elem/steps x 1+ndim}.}
+  \item{CR}{Probability of crossover at each step. matrix \code{n.elem/steps x
+    1+length(pCR)}.}
   \item{in.burnin}{Boolean showing whether dream was in the burn-in
-    period at termination (see description above)}
+    period at termination (see description above).}
   \item{fun.evals}{Total number of function evaluations.}
   \item{time}{running time (wall time) in seconds.}
   \item{EXITMSG}{a message about the stopping condition.}

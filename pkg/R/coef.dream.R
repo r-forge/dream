@@ -2,10 +2,10 @@
 ##' @param dream object
 ##' @param last.prop proportion of total sequence to use (0,1]
 ##'  if 1, use whole sequence
-##' @param method. either a function or one of maxLik,mean,median
+##' @param method. either a function or one of uni.mode,mean,median,sample.ml
 ##' @return named vector of parameter values
 coef.dream <- function(object,last.prop=.5,use.thinned=FALSE,
-                       method=c("maxLik","mean","median"),...){
+                       method=c("uni.mode","mean","median","sample.ml"),...){
 
   stopifnot(last.prop>0)
   
@@ -19,10 +19,19 @@ coef.dream <- function(object,last.prop=.5,use.thinned=FALSE,
 
   stopifnot(!is.null(sss))
 
-  if (class(method)!="function") {
+  if (identical(method, "sample.ml")) {
+      ## TODO: make sure ppp corresponds to sss
+      ppp <- object$hist.logp
+      maxi <- which.max(ppp)
+      maxchain <- col(ppp)[maxi]
+      maxtime <- row(ppp)[maxi]
+      return(sss[[maxchain]][maxtime,])
+  }
+  
+  if (!is.function(method)) {
     method <- switch(
                      match.arg(method),
-                     "maxLik"=maxLikCoda,
+                     "uni.mode"=maxLikCoda,
                      "mean"=function(sss) colMeans(as.matrix(sss)),
                      "median"=function(sss) apply(as.matrix(sss),2,median)
                      )
