@@ -5,7 +5,8 @@
 ##' @param method. either a function or one of uni.mode,mean,median,sample.ml
 ##' @return named vector of parameter values
 coef.dream <- function(object,last.prop=.5,use.thinned=FALSE,
-                       method=c("uni.mode","mean","median","sample.ml"),...){
+                       method=c("uni.mode","mean","median","sample.ml"),...)
+{
 
   stopifnot(last.prop>0)
   

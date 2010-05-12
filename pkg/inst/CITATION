@@ -1,0 +1,45 @@
+
+citEntry(header = "To cite the DREAM algorithm use:",
+         entry="Article",
+         title = paste("Accelerating Markov chain Monte Carlo",
+                       "simulation by differential evolution with", 
+                       "self-adaptive randomized subspace sampling."),
+         author = personList(as.person("J A Vrugt"),
+	                     person("C", "J F", last = "ter Braak"),
+                             as.person("C G H Diks"),
+                             as.person("B A Robinson"),
+                             as.person("J M Hyman"),
+                             as.person("D Higdon")),
+         journal      = "International Journal of Nonlinear Sciences and Numerical Simulation",
+         year         = "2009",
+	 volume       = "10",
+	 number       = "3",
+	 pages        = "273--290",
+         
+         textVersion = 
+         paste(
+  "Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Robinson, B. A.,",
+  "Hyman, J. M. and Higdon, D. (2009). Accelerating Markov chain Monte Carlo",
+  "simulation by differential evolution with self-adaptive randomized",
+  "subspace sampling. International Journal of Nonlinear Sciences",
+  "and Numerical Simulation, 10(3), 273-290.")
+)
+
+meta <- packageDescription("dream")
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
+vers <- paste("R package version", meta$Version)
+
+citEntry(header = "To cite the 'dream' package use:",
+         entry = "Manual",
+	 title = "dream: DiffeRential Evolution Adaptive Metropolis",
+	 author = personList(as.person("Joseph Guillaume"),
+                             as.person("Felix Andrews")),
+         year = year,
+	 note = vers,
+	 url = "http://CRAN.R-project.org/package=dream",
+	 textVersion =
+         paste("Joseph Guillaume and Felix Andrews (", year,"). ",
+               "dream: DiffeRential Evolution Adaptive Metropolis. ", 
+               vers, ". ",
+               "URL http://CRAN.R-project.org/package=dream", sep="")
+)
