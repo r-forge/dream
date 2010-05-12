@@ -37,7 +37,7 @@ simulate.dream <- function(object,nsim=1000,seed=NULL,...){
 ##' @param use.thinned Whether to use existing thinned chains
 ##' @return  whatever FUN returns (either numeric, ts or list). For CI, either a matrix with upper and lower bound or list of matrices.
 predict.dream <- function(object,newdata=NULL,newFUN=NULL,
-                          method="maxLik",level=0.99,
+                          method="uni.mode",level=0.99,
                           last.prop=0.5,use.thinned=TRUE,...
                           ){
 

@@ -1,3 +1,46 @@
+## Copyright (c) 2008, Los Alamos National Security, LLC                                        
+## All rights reserved.                                                                         
+##                                                                                              
+## Copyright 2008. Los Alamos National Security, LLC. This software was produced under U.S.     
+## Government contract DE-AC52-06NA25396 for Los Alamos National Laboratory (LANL), which is    
+## operated by Los Alamos National Security, LLC for the U.S. Department of Energy. The U.S.    
+## Government has rights to use, reproduce, and distribute this software.                       
+##                                                                                              
+## NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES A NY WARRANTY, EXPRESS OR 
+## IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is modified to  
+## produce derivative works, such modified software should be clearly marked, so as not to      
+## confuse it with the version available from LANL.                                             
+##                                                                                              
+## Additionally, redistribution and use in source and binary forms, with or without             
+## modification, are permitted provided that the following conditions are met:                  
+## * Redistributions of source code must retain the above copyright notice, this list of        
+##   conditions and the following disclaimer.                                                   
+## * Redistributions in binary form must reproduce the above copyright notice, this list of     
+##   conditions and the following disclaimer in the documentation and/or other materials        
+##   provided with the distribution.                                                            
+## * Neither the name of Los Alamos National Security, LLC, Los Alamos National Laboratory, LANL
+##   the U.S. Government, nor the names of its contributors may be used to endorse or promote   
+##   products derived from this software without specific prior written permission.             
+##                                                                                              
+## THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND CONTRIBUTORS "AS IS" AND  
+## ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES     
+## OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS
+## ALAMOS NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+## SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF  
+## SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)       
+## HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,      
+## EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                           
+##                                                                                              
+## MATLAB code written by Jasper A. Vrugt, Center for NonLinear Studies (CNLS)                  
+##                                                                                              
+## Written by Jasper A. Vrugt: vrugt@lanl.gov                                                   
+
+
+################################################################################################
+## This R code has been converted and modified from the original MATLAB code by               ##
+## Joseph Guillaume and Felix Andrews, 2010.                                                  ##
+################################################################################################
 
 
 dreamDefaults <- function()
@@ -270,17 +313,19 @@ dream <- function(FUN, func.type,pars,
   test.pars <- FUN.pars
   test.pars[[names(formals(FUN))[1]]] <- x[1,]
   modpred <- do.call(FUN,test.pars)
-  if (!inherits(modpred,"numeric")) stop(sprintf("Result of FUN should be of class numeric, not %s",class(modpred)))
+  if (!is.numeric(modpred))
+      stop(sprintf("Result of FUN should be of class numeric, not %s", class(modpred)))
 
   ## make each element of pars a list and extract lower / upper
   lower <- sapply(pars, function(x) min(x[[1]]))
   upper <- sapply(pars, function(x) max(x[[1]]))
 
   ##Step 2: Calculate posterior density associated with each value in x
-  tmp<-do.call(CompDensity,list(pars=x,control=control,FUN=FUN,func.type=func.type,measurement=measurement,FUN.pars=FUN.pars))
+  tmp <- CompDensity(pars = x, control = control, FUN = FUN, func.type = func.type,
+                     measurement = measurement, FUN.pars = FUN.pars)
 
   ##Save the initial population, density and log density in one list X
-  X<-cbind(x=x,p=tmp$p,logp=tmp$logp)
+  X <- cbind(x = x, p = tmp$p, logp = tmp$logp)
   colnames(X) <- c(names(pars), "p", "logp")
   
   ##Initialise the sequences
@@ -323,7 +368,8 @@ dream <- function(FUN, func.type,pars,
       CR[,gen.number] <- tmp$CR
 
       ## Now compute the likelihood of the new points
-      tmp <- CompDensity(pars=x.new,control=control,FUN=FUN,func.type=func.type,measurement=measurement,FUN.pars=FUN.pars)
+      tmp <- CompDensity(pars = x.new, control = control, FUN = FUN, func.type = func.type,
+                         measurement = measurement, FUN.pars = FUN.pars)
       p.new <- tmp$p
       logp.new <- tmp$logp
 
@@ -480,12 +526,10 @@ dream <- function(FUN, func.type,pars,
   obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
   if (!is.na(control$thin.t)){
     Reduced.Seq <- Reduced.Seq[1:counter.redseq,,]
-    obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ,function(i) mcmc(
-                                                               Reduced.Seq[,1:NDIM,i],
-                                                                   start=1,
-                                                                   end=counter-1,
-                                                                   thin=control$thin.t)
-                                           ))
+    obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ, function(i) {
+        mcmc(Reduced.Seq[,1:NDIM,i], start = 1,
+             end = counter-1, thin = control$thin.t)
+        }))
   }
 
   ## TODO: make these 'ts' objects and sync with Reduced.Seq by thinning

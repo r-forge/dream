@@ -1,7 +1,7 @@
 
-summary.dream <- function(object,...){
+summary.dream <- function(object, fraction = 0.5, ...){
 
-  coda.sum <- summary(window(object$Sequences, start = end(object$Sequences)/2 + 1))
+  coda.sum <- summary(fitted(object, fraction = fraction), ...)
   
   cat(sprintf("
 Exit message:  %s
@@ -18,7 +18,7 @@ Final R.stats:
   if (all(R.stat.last<0)) {
     R.stat.last <- gelman.diag(object$Sequences)$psrf[,1]
   }
-  names(R.stat.last) <-colnames(object$R.stat)[-1]
+  names(R.stat.last) <- colnames(object$R.stat)[-1]
     
   for (i in 1:length(R.stat.last)){
     cat(sprintf("\t%s:\t%f\n",

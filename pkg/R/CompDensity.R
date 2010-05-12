@@ -112,11 +112,13 @@ CompDensity <- function(pars,control,FUN,func.type,
   p <- sapply(temp,function(x) x[1])
   logp <- sapply(temp,function(x) x[2])
 
-  if(class(p)!="numeric") {
+  if (!is.numeric(p)) {
     print(p)
     stop(sprintf("Expected class numeric, got class %s. Error with multicore? Set control$parallel='none' to not use parallelisation",class(p)))
   }
-  stopifnot(!any(is.na(p)))
+  if (any(is.na(p))) {
+      stop("likelihood function produced invalid probabilities (NA/NaN)")
+  }
   ##stopifnot(!any(is.na(logp))) ##Not used anyway
   return(list(p=p,logp=logp))
 } ##CompDensity

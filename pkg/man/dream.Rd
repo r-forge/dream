@@ -179,7 +179,7 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
 \references{
   
   Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Robinson, B. A.,
-  Hyman, J. M., Higdon, D., 2009. Accelerating markov chain monte carlo
+  Hyman, J. M., Higdon, D., 2009. Accelerating Markov chain Monte Carlo
   simulation by differential evolution with self-adaptive randomized
   subspace sampling. \emph{International Journal of Nonlinear Sciences
   and Numerical Simulation} 10 (3), 273-290. 

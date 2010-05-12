@@ -4,39 +4,31 @@
 
 ##' Uses second half of sequences
 
-plot.dream <- function(x,interactive=TRUE,...){
-  devAskNewPage(interactive)
+plot.dream <- function(x, interactive = TRUE, ...){
+  opar <- devAskNewPage(interactive)
+  on.exit(devAskNewPage(opar))
   
-  ss <- window(x$Sequences, start = end(x$Sequences)/2 + 1)
+  ss <- fitted(x, ...)
 
-  ## Trace and parameter density
+  ## Convergence (Gelman plot)
   
-  plot(ss)
+  tmp <- try(gelman.plot(ss))
 
-  print(xyplot(ss))
+  if (inherits(tmp, "try-error")) {
+      plot(x$R.stat[,1],x$R.stat[,2],type="l",ylim=c(0,2))
+      for (i in 2:x$control$ndim) lines(x$R.stat[,1],x$R.stat[,i+1],ylim=c(0,2))
+      title(main="Evolution of R.stat",sub="Equivalent to gelman.plot")
+  }
+
+  ## Trace and parameter density and auto-correlation
+  
   print(densityplot(ss))
 
+  print(xyplot(ss))
+
+  print(acfplot(ss))
+
   ## Acceptance rate
-  plot(table(x$AR[,2]),main="Distribution of % acceptance rate")
-  
-  ##Convergence
-  
-  try(gelman.plot(ss))
-
-  plot(x$R.stat[,1],x$R.stat[,2],type="l",ylim=c(0,2))
-  for (i in 2:x$control$ndim) lines(x$R.stat[,1],x$R.stat[,i+1],ylim=c(0,2))
-  title(main="Evolution of R.stat",sub="Equivalent to gelman.plot")
-
-  ## Multi-variate density for first chain
-  
-  print(splom(as.data.frame(x$Sequences[[1]]),
-      upper.panel = panel.smoothScatter, nrpoints = 0,
-      lower.panel = function(x, y, ...) {
-          panel.grid(-1, -1)
-          panel.loess(x, y, span = 1/3, lwd = 1)
-          panel.loess(x, y, span = 2/3, lwd = 2)
-          grid::grid.text(paste("cor =", round(cor(x, y),2)),
-                          y = 0.1)
-      }))
+  print(barchart(table(x$AR[,2]), main="Distribution of % acceptance rate"))
   
 }##plot.dream
