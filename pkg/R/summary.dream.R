@@ -1,7 +1,7 @@
 
 summary.dream <- function(object, fraction = 0.5, ...){
 
-  coda.sum <- summary(fitted(object, fraction = fraction), ...)
+  coda.sum <- summary(window(object, fraction = fraction), ...)
   
   cat(sprintf("
 Exit message:  %s

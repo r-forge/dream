@@ -45,32 +45,30 @@ unloadNamespace("dream")
 library(dream)
 
 Model.y <- function(p,x) p[1]*x/(x+p[2])
-
-set.seed(456)
+pars <- list(p1=c(0,1),p2=c(0,100))
 
 control <- list(
                 nseq=4,
                 thin.t=10
                 )
 
-pars <- list(p1=c(0,1),p2=c(0,100))
+## TODO: check if FUN Missing arguments: is really necessary
+## TODO: header for iteration output
+## TODO: predict.dream-model
+## TODO: dreamCalibrate help
+set.seed(456)
+dd <- dreamCalibrate(FUN=Model.y,
+                     pars=pars,
+                     obs=obs.all$y,
+                     FUN.pars=list(x=obs.all$x),
+                     control=control
+                     )
 
-dd <- dream(
-            FUN=Model.y, func.type="calc.rmse",
-            pars = pars,
-            FUN.pars=list(
-              x=obs.all$x
-              ),
-            INIT = LHSInit,
-            measurement=list(data=obs.all$y),
-            control = control
-            )
+print(dd)
 
-dd
+print(summary(dd))
 
-summary(dd)
-
-coef(dd)
+print(coef(dd))
 
 plot(dd)
 
@@ -98,16 +96,15 @@ plotCIs <- function(x,cis,...){
 }##plotCIs
 
 ## Calibrate with Obs
-dd <- dream(
-            FUN=Model.y, func.type="calc.rmse",
-            pars = pars,
-            FUN.pars=list(
-              x=Obs$x
-              ),
-            INIT = LHSInit,
-            measurement=list(data=Obs$y),
-            control = control
-            )
+dd <- dreamCalibrate(
+                     FUN=Model.y,
+                     pars=pars,
+                     obs=Obs$y,
+                     FUN.pars=list(
+                       x=Obs$x
+                       ),
+                     control = control
+                     )
 
 ##Obs1
 plotFME()
@@ -125,26 +122,9 @@ plotCIs(Obs2$x,predict(dd,list(x=Obs2$x),method="CI"),col="red")
 
 ### Example with new sample
 dd.sim <- simulate(dd)
-predict(dd.sim)
 plotFME()
 lines(Obs2$x,predict(dd,list(x=Obs2$x)),col="blue")
 lines(Obs2$x,predict(dd.sim,list(x=Obs2$x)),col="purple")
 
-
-########################
-## Legacy examples
-plotFME()
-lines(Model(p=coef(dd),x=0:375),col="green")
-
-## Naive 95% bounds from residuals
-resid <- Model.y(p=coef(dd),x=Obs$x)-Obs$y
-##densityplot(resid)
-qq <- quantile(resid,c(0.005,.995))
-gg <- t(sapply(Model.y(p=coef(dd),x=Obs$x),function(v) v+qq))
-plotCIs(Obs$x,gg,col="grey")
-
-## Test on Obs2
-cis.2 <- predict(dd,list(x=Obs2$x),out="CI")
-plotCIs(Obs2$x,cis.2,col="red")
 
 ## TODO: add residual error, using method p6, vrugt. equifinality

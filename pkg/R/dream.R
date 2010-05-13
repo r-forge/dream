@@ -144,20 +144,19 @@ dream <- function(FUN, func.type,pars,
   
   ## Check INIT and FUN have required extra parameters in INIT.pars & FUN.pars
   req.args.init <- names(formals(INIT))
+  if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars))))
+    stop(paste(c("INIT Missing extra arguments:",
+                 req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),
+               sep=" ",collapse=" "))
+  
   req.args.FUN <- names(formals(FUN))
-
-    if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars))))
-      stop(paste(c("INIT Missing extra arguments:",
-                   req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),
-                 sep=" ",collapse=" "))
-
-  if (length(req.args.FUN)<length(FUN.pars)+1) stop("Some FUN.pars are not required by FUN")
-  if (length(req.args.FUN)>1){
-    req.args.FUN <- req.args.FUN[2:length(req.args.FUN)] ##optional pars only
-    if(!all(req.args.FUN %in% names(FUN.pars))) stop(paste(c("FUN Missing extra arguments:",
-                                                             req.args.FUN[!req.args.FUN %in% c(names(FUN.pars))]),
-                                                           collapse=" "))
-  }
+  ## if (length(req.args.FUN)<length(FUN.pars)+1) stop("Some FUN.pars are not required by FUN")
+  ## if (length(req.args.FUN)>1){
+  ##   req.args.FUN <- req.args.FUN[2:length(req.args.FUN)] ##optional pars only
+  ##   if(!all(req.args.FUN %in% names(FUN.pars))) stop(paste(c("FUN Missing extra arguments:",
+  ##                                                            req.args.FUN[!req.args.FUN %in% c(names(FUN.pars))]),
+  ##                                                          collapse=" "))
+  ## }
   
   ## Update default settings with supplied settings
 
@@ -339,7 +338,6 @@ dream <- function(FUN, func.type,pars,
   
   ##Save history log density of individual chains
   hist.logp[1,] <- X[,"logp"]
-  
 
 ################################
   ##Start iteration
@@ -481,12 +479,16 @@ dream <- function(FUN, func.type,pars,
       counter.report <- counter.report+1
             
       try({
-          obj$R.stat[counter.report,] <- c(counter.fun.evals,gelman.diag(
-                    as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:(counter-1),1:NDIM,i]))),
-                       autoburnin=TRUE)$psrf[,1])
-          if (counter.report == 1)
-              message(format(colnames(obj$R.stat), width = 5))
-          message(format(obj$R.stat[counter.report,], width = 5, digits = 4))
+        obj$R.stat[counter.report,] <-
+          c(counter.fun.evals,
+            gelman.diag(
+                        as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[1:(counter-1),1:NDIM,i]))),
+                        autoburnin=TRUE)$psrf[,1])
+        if (counter.report == 2){
+          message("R.stats:")
+          message(format(colnames(obj$R.stat), width = 10,justify="right"))
+        }
+        message(format(obj$R.stat[counter.report,], width = 10, digits = 4))
       })
       
       if (all(!is.na(obj$R.stat[counter.report,])) &&
@@ -496,7 +498,7 @@ dream <- function(FUN, func.type,pars,
         ## obj$EXITFLAG <- 3
       }
 
-    }##counter.report
+    } ##counter.report
     
     ## Update the counter.outloop
     counter.outloop = counter.outloop + 1
@@ -522,14 +524,15 @@ dream <- function(FUN, func.type,pars,
 
   ## Trim outputs to collected data - remove extra rows
   ## Convert sequences to mcmc objects
-  Sequences <- Sequences[1:(counter-1),,]
-  obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
   if (!is.na(control$thin.t)){
     Reduced.Seq <- Reduced.Seq[1:counter.redseq,,]
-    obj$Reduced.Seq <- as.mcmc.list(lapply(1:NSEQ, function(i) {
-        mcmc(Reduced.Seq[,1:NDIM,i], start = 1,
-             end = counter-1, thin = control$thin.t)
-        }))
+    obj$Sequences <- as.mcmc.list(lapply(1:NSEQ, function(i) {
+      mcmc(Reduced.Seq[,1:NDIM,i], start = 1,
+           end = counter-1, thin = control$thin.t)
+    }))
+  } else {
+    Sequences <- Sequences[1:(counter-1),,]
+    obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
   }
 
   ## TODO: make these 'ts' objects and sync with Reduced.Seq by thinning

@@ -17,3 +17,5 @@ dd <- dream(
               ),
             control = control
             )
+
+plot(dd)

@@ -8,7 +8,7 @@ plot.dream <- function(x, interactive = TRUE, ...){
   opar <- devAskNewPage(interactive)
   on.exit(devAskNewPage(opar))
   
-  ss <- fitted(x, ...)
+  ss <- window(x, ...)
 
   ## Convergence (Gelman plot)
   

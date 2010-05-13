@@ -37,23 +37,24 @@ if (require(doSNOW)){
 
 for (p in c("none","snow","foreach")){
 
-  set.seed(456)
+  print(p)
   control$parallel <- p
-  
-  dd <- dream(
-              FUN=Model.y, func.type="calc.rmse",
-              pars = pars,
-              FUN.pars=list(
-                x=obs.all$x
-                ),
-              INIT = LHSInit,
-              measurement=list(data=obs.all$y),
-              control = control
-              )
+    
+  set.seed(456)  
+  dd <- dreamCalibrate(
+                       FUN=Model.y,
+                       pars = pars,
+                       obs=obs.all$y,
+                       FUN.pars=list(
+                         x=obs.all$x
+                         ),
+                       control = control
+                       )
 
-  print(dd$control$parallel)
+
+  print("Coefficients:")
   print(coef(dd))
-  print(dd$time)
+  print(sprintf("Elapsed time %f seconds",dd$time))
 }
 if (require(doSNOW))  stopCluster(cl)
 
@@ -83,11 +84,9 @@ if (require(doSNOW))  stopCluster(cl)
 Model.y <- function(p,x) {
   Sys.sleep(1e-3)
   p[1]*x/(x+p[2])
-
 }
 
 system.time(sapply(1:5e1,function(x) Model.y(c(0,0),obs.all$x)))[["elapsed"]]/5e1
-
 
 if (require(doSNOW)){
   cl <- makeCluster(2, type = "SOCK")
@@ -95,22 +94,21 @@ if (require(doSNOW)){
 }
 
 for (p in c("none","snow","foreach")){
+  print(p)
   set.seed(456)
   control$parallel <- p
   control$maxtime <- 20
   
-  dd <- dream(
-              FUN=Model.y, func.type="calc.rmse",
-              pars = pars,
-              FUN.pars=list(
-                x=obs.all$x
-                ),
-              INIT = LHSInit,
-              measurement=list(data=obs.all$y),
-              control = control
-              )
-  print(dd$control$parallel)
-  print(dd$fun.evals)
+  dd <- dreamCalibrate(
+                       FUN=Model.y,
+                       pars = pars,
+                       obs=obs.all$y,
+                       FUN.pars=list(
+                         x=obs.all$x
+                         ),
+                       control = control
+                       )
+  print(sprintf("Number of function evaluations: %f",dd$fun.evals))
 }
 
 if (require(doSNOW))  stopCluster(cl)

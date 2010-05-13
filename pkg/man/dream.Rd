@@ -67,6 +67,7 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
   }
 }
 \details{
+
   Elements of control are:
   \tabular{lll}{
     \emph{Element} \tab \emph{Default} \tab \emph{Description} \cr
@@ -138,20 +139,15 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
   There are S3 methods for print, summary,
   \code{\link[=plot.dream]{plot}},
   \code{\link[=coef.dream]{coef}},
-  \code{\link[=predict.dream]{predict}},
-  simulate
-
-  coef uses \code{\link{maxLikPars}}, a naive approach to extracting the
-  most likely parameter value, using the bandwith parameters used for
-  CODA density plots.
+  \code{\link[=simulate.dream]{simulate}},
+  \code{\link[=window.dream]{window}}
 
 }
 \value{
   A list with elements:
   \item{X}{converged nseq points in parameter space. matrix \code{nseq x ndim}.}
-  \item{Sequences}{ \code{\link{mcmc.list}}. \code{nseq} mcmc elements of \code{ndim} variables.}
-  \item{Reduced.Seq}{ \code{\link{mcmc.list}}. \code{nseq} mcmc elements of \code{ndim}
-    variables, if \code{control$thin.t!=NA}.}
+  \item{Sequences}{ \code{\link{mcmc.list}}. \code{nseq} mcmc elements
+    of \code{ndim} variables. The thinned chains if \code{control$thin.t!=NA}}
   \item{hist.logp}{History of log(\var{p}) values. matrix \code{nseq x n.elem}.}
   \item{AR}{Acceptance rate for each draw. matrix \code{n.elem x 2}.}
   \item{outlier}{Iterations at which chains were replaced. vector of variable length}
@@ -166,11 +162,10 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
 }
 
 \seealso{
-  \code{\link{possibility.envelope}}
-  
+  \code{\link{dreamCalibrate}} to calibrate a function using dream.
+
   Examples in demo folder:
   \itemize{
-    \item{FME non linear model: }{Calibrating the non-linear model shown in the FME vignette}
     \item{example1: }{Fitting a banana shaped distribution - the first example
   in Vrugt matlab code}
     }
