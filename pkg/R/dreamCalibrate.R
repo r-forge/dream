@@ -29,14 +29,13 @@ calc.weighted.rmse <- function(predicted,observed,control=list(gamma=0)){
 ## control: Wb,Cb,gamma,measurement.sigma
 calc.loglik <- function(predicted,observed,control=list(gamma=0)){
 
-  req.control <- c("gamma")
+  req.control <- c("gamma","sigma")
   if (!all(req.control %in% names(control)))
     stop(sprintf("Missing arguments to control: %s",
                  paste(req.control[!req.control %in% names(control)],collapse=", ")
                  ))
   
   if (!all(c("Cb","Wb") %in% names(control))) control <- modifyList(control,CalcCbWb(control$gamma))
-  if (! "sigma" %in% names(control)) control$sigma <- sd(observed)
   if (! "N" %in% names(control)) control$N <- length(observed)
 
   err <- as.numeric(observed-predicted)
@@ -51,7 +50,7 @@ calc.loglik <- function(predicted,observed,control=list(gamma=0)){
 dreamCalibrate <- function(FUN,
                            pars,
                            obs,
-                           lik.fun=calc.loglik,
+                           lik.fun=calc.rmse,
                            lik.control=NULL,
                            FUN.pars=list(),
                            ... ##Extra arguments to dream

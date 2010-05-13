@@ -3,7 +3,7 @@
 \title{Utility to calibrate a function using dream}
 \usage{
 
-dreamCalibrate(FUN, pars, obs, lik.fun=calc.loglik,lik.control=NULL,FUN.pars = list(), ...)
+dreamCalibrate(FUN, pars, obs, lik.fun=calc.rmse,lik.control=NULL,FUN.pars = list(), ...)
 
 }
 \description{
@@ -23,7 +23,8 @@ dreamCalibrate(FUN, pars, obs, lik.fun=calc.loglik,lik.control=NULL,FUN.pars = l
   }
   \item{lik.fun}{
     A function that returns the log likelihood of model predictions
-    matching observed values. \code{log.lik=f(predicted,observed,control)} 
+    matching observed values. \code{log.lik=f(predicted,observed,control)}.
+	See included functions listed below. Default uses RMSE, as implemented by \code{\link{calc.rmse}}.
   }
   \item{lik.control}{
     A list of any extra arguments to be passed to \code{lik.fun}
@@ -41,6 +42,10 @@ dreamCalibrate(FUN, pars, obs, lik.fun=calc.loglik,lik.control=NULL,FUN.pars = l
   \code{\link[=predict.dream_model]{predict}},
   \code{\link[=coef.dream]{coef}}.
 
+Log likelihood functions included are:
+\code{\link{calc.rmse}},
+\code{\link{calc.weighted.rmse}},
+\code{\link{calc.loglik}}
 }
 \value{
   An object inheriting from \code{\link{dream}}, i.e. with the same elements and:
