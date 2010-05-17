@@ -56,6 +56,7 @@ dreamCalibrate <- function(FUN,
                            ... ##Extra arguments to dream
                            ){
   if (is.null(lik.control)) lik.control <- eval(formals(lik.fun)$control)
+  ## TODO: remove ... from here and move do.call processing from dream to here.
   wrap.lik.fun <- function(pars,...) lik.fun(FUN(pars,...),obs,lik.control)
   dd <- dream(FUN=wrap.lik.fun,
               pars=pars,
@@ -67,6 +68,7 @@ dreamCalibrate <- function(FUN,
   dd$call <- match.call()
   dd$FUN <- FUN
   dd$FUN.pars <- FUN.pars
+  dd$lik.fun <- function(p) do.call(wrap.lik.fun,modifyList(FUN.pars,list(pars=p)))
   class(dd) <- c("dream_model",class(dd))
   dd
 } ##dreamCalibrate

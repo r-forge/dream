@@ -524,18 +524,16 @@ dream <- function(FUN, func.type,pars,
 
   ## Trim outputs to collected data - remove extra rows
   ## Convert sequences to mcmc objects
-  if (!is.na(control$thin.t)){
-    Reduced.Seq <- Reduced.Seq[1:counter.redseq,,]
-    obj$Sequences <- as.mcmc.list(lapply(1:NSEQ, function(i) {
-      mcmc(Reduced.Seq[,1:NDIM,i], start = 1,
-           end = counter-1, thin = control$thin.t)
-    }))
-  } else {
-    Sequences <- Sequences[1:(counter-1),,]
-    obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
+  ## TODO: remove all prior refs to Reduced.Seq - now not needed, given window.mcmc is used
+  Sequences <- Sequences[1:(counter-1),,]
+  obj$Sequences <- as.mcmc.list(lapply(1:NSEQ,function(i) as.mcmc(Sequences[,1:NDIM,i])))
+  if(!is.na(control$thin.t)){
+    obj$Sequences <- window(obj$Sequences,thin=control$thin.t)
   }
 
   ## TODO: make these 'ts' objects and sync with Reduced.Seq by thinning
+  ##  Would it be better to keep all data, and sync when needed by matching start, end,thin?
+  ##   See coef.dream for eg.
   obj$X <- X
   obj$R.stat <- obj$R.stat[1:counter.report,,drop=FALSE]
   obj$hist.logp <- hist.logp[1:(counter-1),,drop=FALSE]

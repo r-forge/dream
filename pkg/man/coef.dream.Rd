@@ -3,7 +3,7 @@
 \alias{coef.dream_model}
 \title{Extract parameter values from dream or dream_model object}
 \usage{
-\method{coef}{dream}(object, method = c("uni.mode", "mean", "median", "sample.ml"), \dots)
+\method{coef}{dream}(object, method = c("sample.ml","uni.mode", "mean", "median"), \dots)
 }
 \description{Extract parameter values using a choice of methods (or an
   arbitrary function)}
@@ -17,6 +17,8 @@
         mode of the univariate density estimate
         for each parameter, using settings as in
         \code{\link{densityplot.mcmc}}.
+	May not find the optimal parameter combination of the
+	distribution is multi-modal.
       }
       \item{\code{"mean"}}{
         mean of each univariate parameter distribution.

@@ -48,14 +48,9 @@ Model.y <- function(p,x) p[1]*x/(x+p[2])
 pars <- list(p1=c(0,1),p2=c(0,100))
 
 control <- list(
-                nseq=4,
-                thin.t=10
+                nseq=4
                 )
 
-## TODO: check if FUN Missing arguments: is really necessary
-## TODO: header for iteration output
-## TODO: predict.dream-model
-## TODO: dreamCalibrate help
 set.seed(456)
 dd <- dreamCalibrate(FUN=Model.y,
                      pars=pars,
@@ -73,8 +68,14 @@ print(coef(dd))
 plot(dd)
 
 plotFME()
-lines(Model(p=coef(dd),x=0:375),col="green")
+lines(predict(dd,
+              newdata=list(x=0:375)),
+      col="green")
 
+
+## Compare likelihood function for coefficients obtained by dream and FME modfit
+dd$lik.fun(coef(dd))
+dd$lik.fun(P$par)
 
 ########################
 ## Calculate bounds around output estimates

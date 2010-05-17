@@ -50,7 +50,11 @@ Log likelihood functions included are:
 \value{
   An object inheriting from \code{\link{dream}}, i.e. with the same elements and:
   \item{FUN}{The function calibrated}
-  \item{FUN.pars}{The extra arguments originally passed to that function}
+  \item{FUN.pars}{The extra arguments originally passed to that
+    function}
+  \item{lik.fun}{A convenience function f(pars) that returns the
+    log likelihood for a parameter set, as would be calculated using the
+    given calibration dataset and chosen likelihood function.}
 }
 
 \seealso{

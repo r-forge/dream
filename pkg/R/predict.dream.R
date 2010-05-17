@@ -8,12 +8,12 @@
 ##' @param ... arguments to window.dream
 ##' @return  whatever FUN returns (either numeric, ts or list). For CI, either a matrix with upper and lower bound or list of matrices.
 predict.dream_model <- function(object,newdata=NULL,
-                                method="uni.mode",level=0.99, ...
+                                method="sample.ml",level=0.99, ...
                           ){
 
   ## Check and initialise parameters
   stopifnot(is.null(newdata) || is.list(newdata))
-  stopifnot(!"CI" %in% method || !is.null(level))
+  stopifnot(is.function(method) || !("CI" %in% method && is.null(level)))
 
 ###
   ## Fetch function and parameters from dream-model object
@@ -31,7 +31,7 @@ predict.dream_model <- function(object,newdata=NULL,
   
   ## Predict for desired method(s)
 
-  if (method=="CI"){
+  if (!is.function(method) && method=="CI"){
 
     sss <- window(object,...)
     

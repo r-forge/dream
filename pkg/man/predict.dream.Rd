@@ -2,7 +2,7 @@
 \alias{predict.dream_model}
 \title{Predict values using dream_model object}
 \usage{
-\S3method{predict}{dream}(object, newdata=NULL,method="uni.mode", level=0.99, \dots)
+\S3method{predict}{dream}(object, newdata=NULL,method="sample.ml", level=0.99, \dots)
 }
 \description{
   Predict values using function calibrated by \code{\link{dreamCalibrate}}, optionally with new data,
