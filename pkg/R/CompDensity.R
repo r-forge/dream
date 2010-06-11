@@ -45,7 +45,7 @@ CompDensity <- function(pars,control,FUN,func.type,
            ## Model directly computes posterior density
            posterior.density={
              p <- modpred
-		 if (any(modpred<=0)) stop("Posterior density returned by FUN should be strictly positive. Otherwise use logposterior.density?")
+             if (any(modpred<0)) stop("Posterior density returned by FUN should be positive. Otherwise use logposterior.density?")
              logp <- log(modpred)
            },
            ## Model computes output simulation           
@@ -73,6 +73,7 @@ CompDensity <- function(pars,control,FUN,func.type,
            logposterior.density={
              p <- modpred
              logp <- modpred
+             stopifnot(all(logp<=0))
            },
            ## Similar as 3, but now weights with the Measurement Sigma
            ## TODO: identical to rmse because difference is in metrop

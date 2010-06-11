@@ -233,6 +233,7 @@ dream <- function(FUN, func.type,pars,
   
   ## Initialize the array that contains the history of the log_density of each chain
   hist.logp <- matrix(NA_real_,max.counter,NSEQ)
+  real.hist.logp <- matrix(NA_real_,max.counter,NSEQ)
   
   if (control$pCR.Update){
     ## Calculate multinomial probabilities of each of the nCR CR values
@@ -338,6 +339,7 @@ dream <- function(FUN, func.type,pars,
   
   ##Save history log density of individual chains
   hist.logp[1,] <- X[,"logp"]
+  real.hist.logp[1,] <- X[,"logp"]
 
 ################################
   ##Start iteration
@@ -410,6 +412,7 @@ dream <- function(FUN, func.type,pars,
 
       ## Update hist.logp
       hist.logp[counter,] <- X[,NDIM+2]
+      real.hist.logp[counter,] <- X[,NDIM+2]
       
       ## Save Acceptance Rate
       obj$AR[counter,] <- c(counter.fun.evals,100 * sum(accept) / NSEQ)
@@ -447,6 +450,7 @@ dream <- function(FUN, func.type,pars,
         r.idx <- which.max(outliers$mean.hist.logp)
         ## Added -- update hist_logp -- chain will not be considered as an outlier chain then
         hist.logp[1:(counter-1),out.id] <- hist.logp[1:(counter-1),r.idx]
+        real.hist.logp[(counter-1),out.id] <- real.hist.logp[(counter-1),r.idx]
         ## Jump outlier chain to r_idx -- Sequences, X
         Sequences[(counter-1),1:(NDIM+2),out.id] <- X[r.idx,]
         X[out.id,1:(NDIM+2)] <- X[r.idx,]
@@ -536,7 +540,7 @@ dream <- function(FUN, func.type,pars,
   ##   See coef.dream for eg.
   obj$X <- X
   obj$R.stat <- obj$R.stat[1:counter.report,,drop=FALSE]
-  obj$hist.logp <- hist.logp[1:(counter-1),,drop=FALSE]
+  obj$hist.logp <- real.hist.logp[1:(counter-1),,drop=FALSE]
   obj$AR <- obj$AR[1:(counter-1),,drop=FALSE]
   obj$CR <- obj$CR[1:(counter.outloop-1),,drop=FALSE]
   
