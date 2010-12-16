@@ -20,3 +20,10 @@ export(calc.rmse)
 export(calc.weighted.rmse)
 export(calc.loglik)
 S3method(predict,dream_model)
+
+export(compareToMatlab,
+       plotMCMCQQ,
+       getMatlabSeq,
+       getMatlabControl,
+	writeMatlabDREAMSettings
+       )

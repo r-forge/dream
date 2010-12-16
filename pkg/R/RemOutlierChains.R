@@ -79,6 +79,9 @@ RemOutlierChains <- function(X,hist.logp,control){
              chain.id <- idx
            }
          },
+         'None'={
+           stop("Outlier detection reached when it should have been turned off")
+         },
          stop("Unknown outlierTest specified")
          ) ##switch
 

@@ -1,6 +1,6 @@
 Package: dream
-Version: 0.3-2
-Date: 2010-06-11
+Version: 0.3-3
+Date: 2010-12-14
 Title: DiffeRential Evolution Adaptive Metropolis
 Author: Joseph Guillaume and Felix Andrews, based on MATLAB code by Jasper Vrugt
 Maintainer: Joseph Guillaume <joseph.guillaume@anu.edu.au>

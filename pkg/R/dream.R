@@ -135,8 +135,10 @@ dream <- function(FUN, func.type,pars,
   stopifnot(is.list(pars))
   stopifnot(length(pars) > 0)
   pars <- lapply(pars, function(x) if (is.list(x)) x else list(x))
-  if (is.null(names(pars)))
-      names(pars) <- paste("p", 1:length(pars), sep = "")
+  if (is.null(names(pars))){
+    pad.length <- nchar(as.character(length(pars)))
+    names(pars) <- sprintf(paste("p%0",pad.length,"d",sep=""),1:length(pars))
+  }
   stopifnot(is.list(control))
   stopifnot(func.type %in% c("calc.rmse","calc.loglik","calc.weighted.rmse","posterior.density","logposterior.density"))
   stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
@@ -180,6 +182,7 @@ dream <- function(FUN, func.type,pars,
   control$REPORT <- (control$REPORT%/%control$nseq) * control$nseq
 
   if (control$burnin.length<1) control$burnin.length <- control$burnin.length*control$ndraw
+  if (identical(tolower(control$outlierTest),'none')) control$burnin.length <- 0
 
   ##Choice of parallel backend
   if (control$parallel!="none"){
@@ -250,6 +253,7 @@ dream <- function(FUN, func.type,pars,
   } ##pCR.Update
 
   end.burnin <- control$burnin.length
+
 
 
 ############################
@@ -430,7 +434,7 @@ dream <- function(FUN, func.type,pars,
     ## Do this to get rounded iteration numbers
     if (counter.outloop == 2) control$steps <- control$steps + 1
 
-    outliers <- RemOutlierChains(X,hist.logp[1:(counter-1),],control)
+    if (control$burnin.length!=0) outliers <- RemOutlierChains(X,hist.logp[1:(counter-1),],control)
     
     if (counter.fun.evals <= end.burnin) {
       ## Check whether to update individual pCR values      
