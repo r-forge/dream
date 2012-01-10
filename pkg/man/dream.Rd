@@ -10,6 +10,15 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
 \description{
   Efficient global MCMC even in high-dimensional spaces.
   From J.A. Vrugt, C.J.F. ter Braak et al.
+
+Note that the dream_zs and dream_d algorithms may be superior in your circumstances. These are not implemented in this package. Please read the following references for details.
+
+Vrugt, J. A. and Ter Braak, C. J. F. (2011) DREAM(D): an adaptive Markov Chain Monte Carlo simulation algorithm to solve discrete, noncontinuous, and combinatorial posterior parameter estimation problems, \emph{Hydrol. Earth Syst. Sci.}, 15, 3701-3713, doi:10.5194/hess-15-3701-2011, from \url{http://dx.doi.org/10.5194/hess-15-3701-2011}
+
+ter Braak, C. and J. Vrugt (2008). "Differential Evolution Markov Chain
+with snooker updater and fewer chains." Statistics and Computing 18(4): 435-446 DOI: 10.1007/s11222-008-9104-9, from url{http://dx.doi.org/10.1007/s11222-008-9104-9}
+
+  This function is a low-level interface, best suited for experts. If you want to use dream to calibrate a function, use \code{\link{dreamCalibrate}} instead.
 }
 \arguments{
   \item{FUN}{
@@ -36,11 +45,11 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
         \code{FUN} returns the residual vector to be compared with
         \code{measurement}. The likelihood is calculated as the sum of
         squared residuals to a power \code{-N}, adjusted by
-        \code{control$gamma}. 
+        \code{control$gamma}.
       }
       \item{\code{"calc.weighted.rmse"}}{
         similar to \code{"calc.rmse"} but weighted with
-        \code{measurement$sigma}. 
+        \code{measurement$sigma}.
       }
     }
   }
@@ -52,7 +61,7 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
   }
   \item{INIT}{
     A function f(pars,nseq,...) returning an \code{nseq x ndim}
-    matrix of initial parameter values. 
+    matrix of initial parameter values.
   }
   \item{INIT.pars}{
     a list of any extra arguments to be passed to the \code{INIT} function.
@@ -63,7 +72,7 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
   \item{measurement}{
     Required parameter for \code{func.type}s starting with \code{calc}.
     A list with element \code{data}, a vector containing observed
-    dependent variable values. 
+    dependent variable values.
   }
 }
 \details{
@@ -78,7 +87,7 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
     generation \cr
     \code{nCR} \tab 3 \tab Crossover values used to generate proposals (geometric
     series). scalar \cr
-    \code{gamma} \tab 0 \tab Kurtosis parameter Bayesian Inference Scheme \cr
+    \code{gamma} \tab 0 \tab Kurtosis parameter Bayesian Inference Scheme. You may know this as beta instead. \cr
     \code{steps} \tab 10 \tab Number of steps in sem \cr
     \code{eps} \tab 5e-2 \tab Random error for ergodicity \cr
     \code{outlierTest} \tab 'IQR_test' \tab Test used to detect outlier
@@ -90,18 +99,18 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
     values outside of parameter bounds.
     One of: "reflect", "bound", "fold", "none","rand"
     \cr
-    
+
     \code{burnin.length} \tab 0.1 \tab If \code{<1} proportion of
     function evaluations to use as burn-in period. If \code{>1} number
     of function evaluations to use.
     In the burnin-period, adaptive tuning of crossover values is
     performed if \code{pCR.Update=TRUE} and the method specified by
-    \code{outlierTest} is used to remove outliers. 
+    \code{outlierTest} is used to remove outliers.
     If outliers are detected outside the burn-in period, dream emits a
     warning and returns to the burn-in period for another \code{burnin.length} iterations.
     If \code{=0} there is no burn-in period, and all outlier warnings
     are suppressed. \cr
-    
+
     \code{thin.t} \tab NA \tab MCMC chain thinning interval. NA if thinning is not
     desired \cr
     \code{REPORT} \tab 1000 \tab Approximate number of function evaluations
@@ -114,7 +123,8 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
     of packages to
     use for parallelisation of function evaluations, in order of
     preference. Options are \code{"multicore", "snow", "foreach"}. For foreach, a backend must be registered from one of the doMC, doMPI,
-    doSNOW packages. \cr
+    doSNOW packages. For expert users using dream with an external
+    program, see \code{"\link{snow.chains}"}. \cr
     \code{ndraw} \tab  1e5 \tab Maximum number of function evaluations. May
     terminate before convergence. \cr
     \code{maxtime} \tab Inf \tab Maximum duration of optimization in seconds. May
@@ -129,13 +139,13 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
 
   Two options for INIT are provided: latin hypercube sampling
   \code{\link{LHSInit}} and covariance-based sampling \code{\link{CovInit}}.
-  
+
   Default settings may not be sufficient for model to run. For few
   parameters, nseq may need to be increased.
 
   If dream frequently warns that it is reentering the burn-period,
   \code{control$burnin.length} may need to be increased.
-  
+
   There are S3 methods for print, summary,
   \code{\link[=plot.dream]{plot}},
   \code{\link[=coef.dream]{coef}},
@@ -172,17 +182,17 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
   }
 
 \references{
-  
+
   Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Robinson, B. A.,
   Hyman, J. M., Higdon, D., 2009. Accelerating Markov chain Monte Carlo
   simulation by differential evolution with self-adaptive randomized
   subspace sampling. \emph{International Journal of Nonlinear Sciences
-  and Numerical Simulation} 10 (3), 273-290. 
- 
+  and Numerical Simulation} 10 (3), 273-290.
+
   Vrugt, J. A., Braak, C. J. F., Gupta, H. V., Robinson, B. A.,
   2009. Equifinality of formal (DREAM) and informal (GLUE) Bayesian
   approaches in hydrologic modeling?
-  \emph{Stochastic Environmental Research and Risk Assessment} 23 (7), 1011--1026. 
+  \emph{Stochastic Environmental Research and Risk Assessment} 23 (7), 1011--1026.
   \url{http://dx.doi.org/10.1007/s00477-008-0274-y}
-  
+
 }

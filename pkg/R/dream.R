@@ -1,40 +1,40 @@
-## Copyright (c) 2008, Los Alamos National Security, LLC                                        
-## All rights reserved.                                                                         
-##                                                                                              
-## Copyright 2008. Los Alamos National Security, LLC. This software was produced under U.S.     
-## Government contract DE-AC52-06NA25396 for Los Alamos National Laboratory (LANL), which is    
-## operated by Los Alamos National Security, LLC for the U.S. Department of Energy. The U.S.    
-## Government has rights to use, reproduce, and distribute this software.                       
-##                                                                                              
-## NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES A NY WARRANTY, EXPRESS OR 
-## IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is modified to  
-## produce derivative works, such modified software should be clearly marked, so as not to      
-## confuse it with the version available from LANL.                                             
-##                                                                                              
-## Additionally, redistribution and use in source and binary forms, with or without             
-## modification, are permitted provided that the following conditions are met:                  
-## * Redistributions of source code must retain the above copyright notice, this list of        
-##   conditions and the following disclaimer.                                                   
-## * Redistributions in binary form must reproduce the above copyright notice, this list of     
-##   conditions and the following disclaimer in the documentation and/or other materials        
-##   provided with the distribution.                                                            
+## Copyright (c) 2008, Los Alamos National Security, LLC
+## All rights reserved.
+##
+## Copyright 2008. Los Alamos National Security, LLC. This software was produced under U.S.
+## Government contract DE-AC52-06NA25396 for Los Alamos National Laboratory (LANL), which is
+## operated by Los Alamos National Security, LLC for the U.S. Department of Energy. The U.S.
+## Government has rights to use, reproduce, and distribute this software.
+##
+## NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES A NY WARRANTY, EXPRESS OR
+## IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is modified to
+## produce derivative works, such modified software should be clearly marked, so as not to
+## confuse it with the version available from LANL.
+##
+## Additionally, redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are met:
+## * Redistributions of source code must retain the above copyright notice, this list of
+##   conditions and the following disclaimer.
+## * Redistributions in binary form must reproduce the above copyright notice, this list of
+##   conditions and the following disclaimer in the documentation and/or other materials
+##   provided with the distribution.
 ## * Neither the name of Los Alamos National Security, LLC, Los Alamos National Laboratory, LANL
-##   the U.S. Government, nor the names of its contributors may be used to endorse or promote   
-##   products derived from this software without specific prior written permission.             
-##                                                                                              
-## THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND CONTRIBUTORS "AS IS" AND  
-## ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES     
+##   the U.S. Government, nor the names of its contributors may be used to endorse or promote
+##   products derived from this software without specific prior written permission.
+##
+## THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND CONTRIBUTORS "AS IS" AND
+## ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
 ## OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS
 ## ALAMOS NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-## SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF  
-## SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)       
+## SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+## SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
 ## HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,      
-## EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                           
-##                                                                                              
-## MATLAB code written by Jasper A. Vrugt, Center for NonLinear Studies (CNLS)                  
-##                                                                                              
-## Written by Jasper A. Vrugt: vrugt@lanl.gov                                                   
+## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+## EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+##
+## MATLAB code written by Jasper A. Vrugt, Center for NonLinear Studies (CNLS)
+##
+## Written by Jasper A. Vrugt: vrugt@lanl.gov
 
 
 ################################################################################################
@@ -109,7 +109,7 @@ dream <- function(FUN, func.type,pars,
                   )
 {
 
-  
+
   ## dimensions
   ##  hist.logp matrix. ndraw/nseq x nseq. length nearly ndraw.
   ##    TODO: removed counter.fun.evals for simplicity. should have been kept?
@@ -143,14 +143,14 @@ dream <- function(FUN, func.type,pars,
   stopifnot(func.type %in% c("calc.rmse","calc.loglik","calc.weighted.rmse","posterior.density","logposterior.density"))
   stopifnot(!is.null(measurement) || func.type %in% c("posterior.density","logposterior.density"))
   stopifnot(!func.type %in% c("calc.rmse","calc.loglik","calc.weighted.rmse") || "data" %in% names(measurement))
-  
+
   ## Check INIT and FUN have required extra parameters in INIT.pars & FUN.pars
   req.args.init <- names(formals(INIT))
   if(!all(req.args.init %in% c("pars","nseq",names(INIT.pars))))
     stop(paste(c("INIT Missing extra arguments:",
                  req.args.init[!req.args.init %in% c("pars","nseq",names(INIT.pars))]),
                sep=" ",collapse=" "))
-  
+
   req.args.FUN <- names(formals(FUN))
   ## if (length(req.args.FUN)<length(FUN.pars)+1) stop("Some FUN.pars are not required by FUN")
   ## if (length(req.args.FUN)>1){
@@ -159,7 +159,7 @@ dream <- function(FUN, func.type,pars,
   ##                                                            req.args.FUN[!req.args.FUN %in% c(names(FUN.pars))]),
   ##                                                          collapse=" "))
   ## }
-  
+
   ## Update default settings with supplied settings
 
   control <- modifyList(dreamDefaults(), control)
@@ -185,7 +185,7 @@ dream <- function(FUN, func.type,pars,
   if (identical(tolower(control$outlierTest),'none')) control$burnin.length <- 0
 
   ##Choice of parallel backend
-  if (control$parallel!="none"){
+  if (!control$parallel %in% c("none","snow.chains")){
     parallel <- "none"
     for (p in control$parallel) {
       if (require(p,character.only=TRUE)) {
@@ -197,22 +197,27 @@ dream <- function(FUN, func.type,pars,
     control$parallel <- parallel
   }
 
-  
   ## Check validity of settings
   if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
   stopifnot(control$DEpairs<=(control$nseq-1)/2) ## Requirement of offde
-  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none")) 
+  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none"))
   if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
   stopifnot(control$REPORT>=0)
+  if (control$parallel=="snow.chains"){
+      library(snow)
+      if (func.type != "logposterior.density") stop("control$parallel=snow.chains only supports func.type=logposterior.density")
+      if (!is.null(control$measurement)) stop("control$measurement is ignored for control$parallel=snow.chains")
+      if (!identical(FUN.pars,list())) stop("FUN.pars is ignored for control$parallel=snow.chains")
 
-  
+  }
+
 ############################
   ## Initialize variables
 
   NDIM <- control$ndim
   NCR <- control$nCR
   NSEQ <- control$nseq
-  
+
   ## Counters
   counter.fun.evals <- NSEQ
   counter <- 2
@@ -224,24 +229,24 @@ dream <- function(FUN, func.type,pars,
   max.counter.outloop <- ceiling((control$ndraw+control$steps*NSEQ)/NSEQ/control$steps)+1
 
   if (!is.na(control$thin.t) && floor(max.counter/control$thin.t)<2) stop(sprintf("Thin parameter should be much smaller than number of iterations (currently %d,%d)",control$thin.t,max.counter))
-  
+
   ## Calculate the parameters in the exponential power density function of Box and Tiao (1973)
   cbwb <- CalcCbWb(control$gamma)
-  control$Cb <- cbwb$Cb
-  control$Wb <- cbwb$Wb
+  if (is.na(control$Cb))  control$Cb <- cbwb$Cb
+  if (is.na(control$Wb))  control$Wb <- cbwb$Wb
 
   ## Generate the Table with JumpRates (dependent on number of dimensions and number of pairs)
   Table.JumpRate<-matrix(NA,NDIM,control$DEpairs)
   for (zz in 1:control$DEpairs) Table.JumpRate[,zz] <- 2.38/sqrt(2*zz*1:NDIM)
-  
+
   ## Initialize the array that contains the history of the log_density of each chain
   hist.logp <- matrix(NA_real_,max.counter,NSEQ)
   real.hist.logp <- matrix(NA_real_,max.counter,NSEQ)
-  
+
   if (control$pCR.Update){
     ## Calculate multinomial probabilities of each of the nCR CR values
     pCR <- rep(1/NCR,NCR)
-    
+
     ## Calculate the actual CR values based on p
     CR <- GenCR(pCR,control)
     lCR <- rep(0,NCR)
@@ -265,7 +270,7 @@ dream <- function(FUN, func.type,pars,
   obj$control <- control
 
   obj$in.burnin <- TRUE
-  
+
   obj$EXITFLAG <- NA
   obj$EXITMSG <- NULL
 
@@ -273,7 +278,7 @@ dream <- function(FUN, func.type,pars,
   obj$AR<-matrix(NA,max.counter,2)
   obj$AR[1,2]<-NSEQ-1 ##Number if only one rejected
   colnames(obj$AR) <- c("fun.evals", "AR")
-  
+
   ##counter.fun.evals + R statistic for each variable at each step
   ## TODO: now using counter.report
   obj$R.stat<-matrix(NA,max.counter.outloop,NDIM+1)
@@ -286,7 +291,7 @@ dream <- function(FUN, func.type,pars,
   colnames(obj$CR) <- c("fun.evals",paste("CR",1:length(pCR),sep=""))
 
   obj$outlier<-NULL
-  
+
   Sequences <- array(NA_real_, c(max.counter,NDIM+2,NSEQ))
   colnames(Sequences) <- c(names(pars), "p", "logp")
   ## Sequences[1,] <- sapply(pars, mean) ## TODO: include?
@@ -298,28 +303,29 @@ dream <- function(FUN, func.type,pars,
   } else Reduced.Seq <- NULL
 
 ############################
-  
+
   ## Change MCMCPar.steps to make sure to get nice iteration numbers in first loop
   control$steps<-control$steps-1
-  
+
   ## initialize timer
   tic <- as.numeric(Sys.time())
   toc <- 0
   counter.report <- 1
 
 ################################
-  
+
   ## Step 1: Sample s points in the parameter space
 
   x <- do.call(INIT,modifyList(INIT.pars,list(pars=pars,nseq=NSEQ)))
 
   ## Test that FUN returns numeric
+if (control$parallel!="snow.chains"){ ## TODO: something equivalent with snow.chains?
   test.pars <- FUN.pars
   test.pars[[names(formals(FUN))[1]]] <- x[1,]
   modpred <- do.call(FUN,test.pars)
   if (!is.numeric(modpred))
       stop(sprintf("Result of FUN should be of class numeric, not %s", class(modpred)))
-
+}
   ## make each element of pars a list and extract lower / upper
   lower <- sapply(pars, function(x) min(x[[1]]))
   upper <- sapply(pars, function(x) max(x[[1]]))
@@ -331,7 +337,7 @@ dream <- function(FUN, func.type,pars,
   ##Save the initial population, density and log density in one list X
   X <- cbind(x = x, p = tmp$p, logp = tmp$logp)
   colnames(X) <- c(names(pars), "p", "logp")
-  
+
   ##Initialise the sequences
   for (qq in 1:NSEQ){
     Sequences[1,,qq] <- X[qq,]
@@ -340,7 +346,7 @@ dream <- function(FUN, func.type,pars,
   ##Save pCR in memory and initialize delta.tot
   obj$CR[1,] <- c(counter.fun.evals,pCR)
   delta.tot <- rep(0,NCR)
-  
+
   ##Save history log density of individual chains
   hist.logp[1,] <- X[,"logp"]
   real.hist.logp[1,] <- X[,"logp"]
@@ -354,7 +360,7 @@ dream <- function(FUN, func.type,pars,
     for (gen.number in 1:control$steps) {
 
       ## Initialize DR properties
-      counter.thin <- counter.thin + 1 
+      counter.thin <- counter.thin + 1
 
       ## Define the current locations and associated posterior densities
       x.old <- X[,1:NDIM,drop=FALSE]
@@ -402,7 +408,7 @@ dream <- function(FUN, func.type,pars,
         ## Reduced sample collection
         Reduced.Seq[counter.redseq,,] <- t(X)
       }
-      
+
       if (control$pCR.Update) {
         ## Calculate the standard deviation of each dimension of X
         ## TODO: matlab syntax is unclear - seems to be columnwise
@@ -417,7 +423,7 @@ dream <- function(FUN, func.type,pars,
       ## Update hist.logp
       hist.logp[counter,] <- X[,NDIM+2]
       real.hist.logp[counter,] <- X[,NDIM+2]
-      
+
       ## Save Acceptance Rate
       obj$AR[counter,] <- c(counter.fun.evals,100 * sum(accept) / NSEQ)
 
@@ -435,19 +441,19 @@ dream <- function(FUN, func.type,pars,
     if (counter.outloop == 2) control$steps <- control$steps + 1
 
     if (control$burnin.length!=0) outliers <- RemOutlierChains(X,hist.logp[1:(counter-1),],control)
-    
+
     if (counter.fun.evals <= end.burnin) {
-      ## Check whether to update individual pCR values      
+      ## Check whether to update individual pCR values
       if (control$pCR.Update) {
         ## Update pCR values
         tmp <- AdaptpCR(CR, delta.tot, lCR, control)
         pCR <- tmp$pCR
         lCR <- tmp$lCR
       }
-      
+
       ## Change any outlier chains to current best value of X
       ## TODO: matlab code didn't match paper. Outlier removal should be within burnin period
-      
+
       ## Loop over each outlier chain (if length>0)
       for (out.id in outliers$chain.id){
         ## Draw random other chain -- cannot be the same as current chain
@@ -471,7 +477,7 @@ dream <- function(FUN, func.type,pars,
       }
     }   ##in burn in.
 
-    
+
     if (control$pCR.Update) {
       ## Generate CR values based on current pCR values
       CR <- GenCR(pCR, control)
@@ -485,7 +491,7 @@ dream <- function(FUN, func.type,pars,
     if (control$REPORT>0 && counter.fun.evals %% control$REPORT==0) {
 
       counter.report <- counter.report+1
-            
+
       try({
         obj$R.stat[counter.report,] <-
           c(counter.fun.evals,
@@ -498,7 +504,7 @@ dream <- function(FUN, func.type,pars,
         }
         message(format(obj$R.stat[counter.report,], width = 10, digits = 4))
       })
-      
+
       if (all(!is.na(obj$R.stat[counter.report,])) &&
           all(obj$R.stat[counter.report,-1]<control$Rthres)) {
         obj$EXITMSG <- 'Convergence criteria reached'
@@ -507,10 +513,10 @@ dream <- function(FUN, func.type,pars,
       }
 
     } ##counter.report
-    
+
     ## Update the counter.outloop
     counter.outloop = counter.outloop + 1
-      
+
     ## break if maximum time exceeded
     toc <- as.numeric(Sys.time()) - tic
     if (toc > control$maxtime) {
@@ -547,7 +553,7 @@ dream <- function(FUN, func.type,pars,
   obj$hist.logp <- real.hist.logp[1:(counter-1),,drop=FALSE]
   obj$AR <- obj$AR[1:(counter-1),,drop=FALSE]
   obj$CR <- obj$CR[1:(counter.outloop-1),,drop=FALSE]
-  
+
   ## store number of iterations
   obj$iterations <- counter.outloop
   ## store number of function evaluations

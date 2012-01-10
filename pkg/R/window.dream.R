@@ -1,10 +1,10 @@
 
 
 window.dream <-
-    function(object,
-             start = 1+(end(object$Sequences)-1)*(1-fraction),
+    function(x,
+             start = 1+(end(x$Sequences)-1)*(1-fraction),
              fraction = 0.5,
              ...)
 {
-    window(object$Sequences, start = start, ...)
+    window(x$Sequences, start = start, ...)
 }

@@ -25,9 +25,21 @@ CompDensity <- function(pars,control,FUN,func.type,
 
   ## Should be guaranteed by dream
   ## stopifnot(!is.null(measurement) || func.type%in% c("posterior.density","logposterior.density"))
-  
+
   stopifnot(!any(is.na(pars)))
-  
+
+  if (control$parallel=="snow.chains"){
+      ## Custom code for John Joseph 6/8/2011
+      ## FUN should be logp=f(cluster instance identifier, list of pars)
+      ## func.type,measurement,FUN.pars should all be NULL
+      logp <- as.numeric(clusterApply(cl=cl,x=1:nrow(pars),fun=FUN,pars=pars))
+      if (any(is.na(logp))) {
+          stop("likelihood function produced invalid probabilities (NA/NaN)")
+      }
+      ##stopifnot(!any(is.na(logp))) ##Not used anyway
+      return(list(p=logp,logp=logp))
+  }
+
   ## dimensions:
   ##  i. iter 1:nseq
   ##  modpred. scalar or vector commensurate to measurement$data
@@ -48,10 +60,10 @@ CompDensity <- function(pars,control,FUN,func.type,
              if (any(modpred<0)) stop("Posterior density returned by FUN should be positive. Otherwise use logposterior.density?")
              logp <- log(modpred)
            },
-           ## Model computes output simulation           
+           ## Model computes output simulation
            calc.loglik={
              err <- as.numeric(measurement$data-modpred)
-                 
+
              ## Derive the log likelihood
              logp <- measurement$N*log(control$Wb/measurement$sigma)-
                control$Cb*(sum((abs(err/measurement$sigma))^(2/(1+control$gamma))))
@@ -67,7 +79,7 @@ CompDensity <- function(pars,control,FUN,func.type,
              ## And retain in memory
              p <- -SSR
              logp <- -0.5*SSR
-             
+
            },
            ## Model directly computes log posterior density
            logposterior.density={
@@ -98,8 +110,8 @@ CompDensity <- function(pars,control,FUN,func.type,
          },
          "foreach"={
            ## foreach(pp=iter(pars,by="row")) %dopar%
-           temp <- foreach(pp=pars) %dopar% do.calc(pp,control=control,MFUN=FUN,func.type=func.type,
-                             measurement=measurement,FUN.pars=FUN.pars)
+           temp <- foreach(pp=pars) %dopar% {do.calc(pp,control=control,MFUN=FUN,func.type=func.type,
+                             measurement=measurement,FUN.pars=FUN.pars)}
          },
          "snow"={
            temp <- clusterApplyLB(cl=cl,x=pars,fun=do.calc,
@@ -109,7 +121,7 @@ CompDensity <- function(pars,control,FUN,func.type,
          temp <- lapply(pars,FUN=do.calc,control=control,MFUN=FUN,func.type=func.type,
                         measurement=measurement,FUN.pars=FUN.pars)
          )##switch parallel
-  
+
   p <- sapply(temp,function(x) x[1])
   logp <- sapply(temp,function(x) x[2])
 

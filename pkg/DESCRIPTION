@@ -1,6 +1,6 @@
 Package: dream
-Version: 0.3-3
-Date: 2010-12-14
+Version: 0.4
+Date: 2011-01-10
 Title: DiffeRential Evolution Adaptive Metropolis
 Author: Joseph Guillaume and Felix Andrews, based on MATLAB code by Jasper Vrugt
 Maintainer: Joseph Guillaume <joseph.guillaume@anu.edu.au>
@@ -8,7 +8,8 @@ Description: Efficient global MCMC even in high-dimensional spaces.
   Based on the original MATLAB code written by Jasper Vrugt.
   Methods for calibration and prediction using the DREAM algorithm
 Depends: coda
-Suggests: multicore, foreach, SNOW, doSNOW, doMPI, doMC
+Suggests: snow, doSNOW, R.matlab, lattice, reshape, mgcv
+Enhances: multicore, foreach, doMPI, doMC
 Imports: stats, utils
 License: file LICENSE
 URL: http://dream.r-forge.r-project.org/

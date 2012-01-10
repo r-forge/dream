@@ -12,7 +12,6 @@ S3method(coef,dream)
 S3method(print,dream)
 S3method(simulate,dream)
 
-export(maxLikPars)
 export(maxLikCoda)
 
 export(dreamCalibrate)

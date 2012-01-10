@@ -2,3 +2,4 @@ FME.nonlinear.model	Nonlinear model calibration as with FME vignette.
 FME.nonlinear.model_parallelisation	Example of parallelisation options
 example1		n-dimensional banana shaped gaussian distribution. From Vrugt's matlab code.
 example2		n-dimensional Gaussian distribution from Vrugt's matlab code
+parallelisation_chain_id	Example of parallelisation options passing id

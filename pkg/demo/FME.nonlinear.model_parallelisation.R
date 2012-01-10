@@ -39,8 +39,8 @@ for (p in c("none","snow","foreach")){
 
   print(p)
   control$parallel <- p
-    
-  set.seed(456)  
+
+  set.seed(456)
   dd <- dreamCalibrate(
                        FUN=Model.y,
                        pars = pars,
@@ -65,16 +65,16 @@ if (require(doSNOW))  stopCluster(cl)
 
 ## For function with 1e-3 sleep
 ## [1] "none"
-##         p1         p2 
-##  0.1511961 50.7765344 
+##         p1         p2
+##  0.1511961 50.7765344
 ## [1] 109.483
 ## [1] "snow"
-##         p1         p2 
-##  0.1511961 50.7765344 
+##         p1         p2
+##  0.1511961 50.7765344
 ## [1] 54.858
 ## [1] "foreach"
-##         p1         p2 
-##  0.1511961 50.7765344 
+##         p1         p2
+##  0.1511961 50.7765344
 ## [1] 109.593
 
 
@@ -82,7 +82,7 @@ if (require(doSNOW))  stopCluster(cl)
 ## Test of number of function evaluations in fixed time for a time-expensive function
 
 Model.y <- function(p,x) {
-  Sys.sleep(1e-3)
+  Sys.sleep(0.1)
   p[1]*x/(x+p[2])
 }
 
@@ -98,7 +98,7 @@ for (p in c("none","snow","foreach")){
   set.seed(456)
   control$parallel <- p
   control$maxtime <- 20
-  
+
   dd <- dreamCalibrate(
                        FUN=Model.y,
                        pars = pars,
@@ -113,11 +113,11 @@ for (p in c("none","snow","foreach")){
 
 if (require(doSNOW))  stopCluster(cl)
 
-## Number of function evaluations
-## TODO: appears to be an error in foreach evaluation
+## Number of function evaluations 10/01/2012
+## Note foreach has significant overhead
 ## [1] "none"
-## [1] 1280
+## [1] "Number of function evaluations: 200.000000"
 ## [1] "snow"
-## [1] 2560
+## [1] "Number of function evaluations: 400.000000"
 ## [1] "foreach"
-## [1] 1280
+## [1] "Number of function evaluations: 280.000000"

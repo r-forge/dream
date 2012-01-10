@@ -2,7 +2,7 @@
 \alias{plot.dream}
 \title{Visualising DREAM results}
 \usage{
-\S3method{plot}{dream}(x,interactive=T,...)
+\S3method{plot}{dream}(x,interactive=TRUE,...)
 }
 \arguments{
   \item{x}{A \code{\link{dream}} object}
@@ -43,10 +43,10 @@
 
     ## All chains combined (treated as one)
     print(densityplot(as.mcmc(as.matrix(ss))))
-    
+
     ## Alternatively, specify burn-in within the call
     print(densityplot(dream.obj$Sequences, start = end(dream.obj$Sequences)/2 + 1))
-    
+
     ## Base graphics parameter density plots
     plot(ss,trace=F)
 

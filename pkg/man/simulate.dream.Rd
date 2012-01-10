@@ -2,7 +2,7 @@
 \alias{simulate.dream}
 \title{Simulate values from a distribution using converged MCMC chains
   from a DREAM object}
-\usage{simulate(object,nsim=1000,seed=NULL,...)}
+\usage{\S3method{simulate}{dream}(object,nsim=1000,seed=NULL,\dots)}
 \arguments{
   \item{object}{\code{\link{dream}} object}
   \item{nsim}{Approximate number of function evaluations (length of
@@ -12,8 +12,8 @@
 }
 \description{
   Continues a converged MCMC chain to provide an additional
-  sample. 
-  
+  sample.
+
   Outlier detection, reporting and convergence diagnostics are
   turned off.
 
