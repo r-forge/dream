@@ -231,10 +231,12 @@ dream <- function(FUN, func.type,pars,
   if (!is.na(control$thin.t) && floor(max.counter/control$thin.t)<2) stop(sprintf("Thin parameter should be much smaller than number of iterations (currently %d,%d)",control$thin.t,max.counter))
 
   ## Calculate the parameters in the exponential power density function of Box and Tiao (1973)
-  cbwb <- CalcCbWb(control$gamma)
-  if (is.na(control$Cb))  control$Cb <- cbwb$Cb
-  if (is.na(control$Wb))  control$Wb <- cbwb$Wb
-
+  if (!func.type %in% c("posterior.density","logposterior.density")){
+    cbwb <- CalcCbWb(control$gamma)
+    if (is.na(control$Cb))  control$Cb <- cbwb$Cb
+    if (is.na(control$Wb))  control$Wb <- cbwb$Wb
+  }
+  
   ## Generate the Table with JumpRates (dependent on number of dimensions and number of pairs)
   Table.JumpRate<-matrix(NA,NDIM,control$DEpairs)
   for (zz in 1:control$DEpairs) Table.JumpRate[,zz] <- 2.38/sqrt(2*zz*1:NDIM)

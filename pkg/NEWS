@@ -1,0 +1,16 @@
+Changes in Version 0.4-1
+
+  o  turn the calculation of Cb and Wb off if a likelihood function is provided.
+  o  cleaned up demo parallelisation_chain_id, added example of extracting parameter values and likelihood function
+  o  expanded 'see also' section in dream man page
+  o  clarify that Gelman-Rubin statistic is convergence of chain in dream man page
+  o  mention MT-DREAM ZS in dream man page
+
+Changes in Version 0.4
+  o  Allowed outlierTest='None' (and burnin.length=Inf) (don't run removeOutliers if burnin.length=0)
+  o  Padding of numbers in default parameter names to guarantee alphabetic order
+  o  Help file for simulate
+  o  Added an example adapted from Vrugt's code
+  o  Added undocumented functions to compare R output to the original matlab output
+  o  Added mat6 files containing matlab output for example1 and example2
+  o  Added ks.test and qq plot comparisons to matlab results for both example1 and example2. The R version appears to behave identically to the matlab version

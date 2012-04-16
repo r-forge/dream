@@ -61,9 +61,11 @@ Log likelihood functions included are:
   See \code{\link{dream}} for details on the calibration method,
   visualisation of its results and diagnostics.
 
-  Example in demo folder:
+  See \code{\link{snow.chains}} for parallelised calibration of external
+  models (expert users only).
+
   \itemize{
-    \item{FME non linear model: }{Calibrating the non-linear model shown
+    \item{\code{demo(FME.nonlinear.model)}}{Calibrating the non-linear model shown
       in the FME vignette}
   }
 }

@@ -11,14 +11,19 @@ dream(FUN, func.type, pars, FUN.pars = list(), INIT = LHSInit,
   Efficient global MCMC even in high-dimensional spaces.
   From J.A. Vrugt, C.J.F. ter Braak et al.
 
-Note that the dream_zs and dream_d algorithms may be superior in your circumstances. These are not implemented in this package. Please read the following references for details.
+  This function is a low-level interface, best suited for experts. If you want to use dream to calibrate a function, use \code{\link{dreamCalibrate}} instead.
+  
+  Note that the dream_zs and dream_d algorithms may be superior in your circumstances. These are not implemented in this package. Please read the following references for details.
 
 Vrugt, J. A. and Ter Braak, C. J. F. (2011) DREAM(D): an adaptive Markov Chain Monte Carlo simulation algorithm to solve discrete, noncontinuous, and combinatorial posterior parameter estimation problems, \emph{Hydrol. Earth Syst. Sci.}, 15, 3701-3713, doi:10.5194/hess-15-3701-2011, from \url{http://dx.doi.org/10.5194/hess-15-3701-2011}
 
-ter Braak, C. and J. Vrugt (2008). "Differential Evolution Markov Chain
-with snooker updater and fewer chains." Statistics and Computing 18(4): 435-446 DOI: 10.1007/s11222-008-9104-9, from url{http://dx.doi.org/10.1007/s11222-008-9104-9}
+ter Braak, C. and J. Vrugt (2008). Differential Evolution Markov Chain
+with snooker updater and fewer chains. Statistics and Computing 18(4): 435-446 DOI: 10.1007/s11222-008-9104-9, from url{http://dx.doi.org/10.1007/s11222-008-9104-9}
 
-  This function is a low-level interface, best suited for experts. If you want to use dream to calibrate a function, use \code{\link{dreamCalibrate}} instead.
+Laloy,E., and J.A. Vrugt.  2012. High-dimensional posterior exploration
+of hydrologic models using multiple-try DREAM(ZS) and high-performance
+computing.  Water Resources Research, 48, W0156, from url{http://dx.doi.org/10.1029/2011WR010608}
+
 }
 \arguments{
   \item{FUN}{
@@ -146,12 +151,6 @@ with snooker updater and fewer chains." Statistics and Computing 18(4): 435-446 
   If dream frequently warns that it is reentering the burn-period,
   \code{control$burnin.length} may need to be increased.
 
-  There are S3 methods for print, summary,
-  \code{\link[=plot.dream]{plot}},
-  \code{\link[=coef.dream]{coef}},
-  \code{\link[=simulate.dream]{simulate}},
-  \code{\link[=window.dream]{window}}
-
 }
 \value{
   A list with elements:
@@ -161,7 +160,10 @@ with snooker updater and fewer chains." Statistics and Computing 18(4): 435-446 
   \item{hist.logp}{History of log(\var{p}) values. matrix \code{nseq x n.elem}.}
   \item{AR}{Acceptance rate for each draw. matrix \code{n.elem x 2}.}
   \item{outlier}{Iterations at which chains were replaced. vector of variable length}
-  \item{R.stat}{gelman.diag statistic for each variable at each step. matrix \code{n.elem/steps x 1+ndim}.}
+  \item{R.stat}{\code{\link{gelman.diag}} statistic for each variable at
+    each step, matrix \code{n.elem/steps x 1+ndim}. This is a measure of convergence of the parallel MCMC
+    chains to the posterior distribution. (N.B. in nonlinear
+    optimisation, this is not a measure of convergence to an optimum parameter set) }
   \item{CR}{Probability of crossover at each step. matrix \code{n.elem/steps x
     1+length(pCR)}.}
   \item{in.burnin}{Boolean showing whether dream was in the burn-in
@@ -173,23 +175,31 @@ with snooker updater and fewer chains." Statistics and Computing 18(4): 435-446 
 
 \seealso{
   \code{\link{dreamCalibrate}} to calibrate a function using dream.
+  \code{\link{snow.chains}} for parallelised calibration of external
+  models (expert users only).
 
-  Examples in demo folder:
+  S3 generic methods for print, summary,
+  \code{\link[=plot.dream]{plot}},
+  \code{\link[=coef.dream]{coef}},
+  \code{\link[=simulate.dream]{simulate}},
+  \code{\link[=window.dream]{window}}
+  
+  Demos:
   \itemize{
-    \item{example1: }{Fitting a banana shaped distribution - the first example
-  in Vrugt matlab code}
-    }
+    \item{\code{demo(example1)} }{Fitting a banana shaped distribution - as in the original matlab code}
+    \item{\code{demo(example2)}}{Fitting an n-dimensional Gaussian distribution as
+  in the original matlab code}
   }
-
+}
 \references{
 
   Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Robinson, B. A.,
   Hyman, J. M., Higdon, D., 2009. Accelerating Markov chain Monte Carlo
   simulation by differential evolution with self-adaptive randomized
   subspace sampling. \emph{International Journal of Nonlinear Sciences
-  and Numerical Simulation} 10 (3), 273-290.
+  and Numerical Simulation} 10 (3), 273-290. \url{http://dx.doi.org/10.1515/IJNSNS.2009.10.3.273}
 
-  Vrugt, J. A., Braak, C. J. F., Gupta, H. V., Robinson, B. A.,
+  Vrugt, J. A., ter Braak, C. J. F., Gupta, H. V., Robinson, B. A.,
   2009. Equifinality of formal (DREAM) and informal (GLUE) Bayesian
   approaches in hydrologic modeling?
   \emph{Stochastic Environmental Research and Risk Assessment} 23 (7), 1011--1026.
