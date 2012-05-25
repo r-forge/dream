@@ -1,5 +1,6 @@
-Changes in Version 0.4-1
+Changes in Version 0.4-2
 
+  o  Remove matlab files to reduce size of package
   o  turn the calculation of Cb and Wb off if a likelihood function is provided.
   o  cleaned up demo parallelisation_chain_id, added example of extracting parameter values and likelihood function
   o  expanded 'see also' section in dream man page

@@ -15,7 +15,7 @@ GenCR <- function(pCR,control){
   ## How many candidate points for each crossover value?
   ## TODO: verify result matches matlab
   ## MATLAB: [L] = multrnd(MCMCPar.seq * MCMCPar.steps,pCR);
-  L <- as.numeric(rmultinom(1,size=control$nseq*control$steps,p=pCR))
+  L <- as.numeric(rmultinom(1,size=control$nseq*control$steps,prob=pCR))
   L2 <- c(0,cumsum(L))
   
   ## Then select which candidate points are selected with what CR

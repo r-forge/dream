@@ -1,9 +1,10 @@
 Package: dream
-Version: 0.4-1
+Version: 0.4-2
 Date: 2012-04-16
 Title: DiffeRential Evolution Adaptive Metropolis
-Author: Joseph Guillaume <joseph.guillaume@anu.edu.au>, Felix Andrews <felix@nfrac.org>
-Maintainer: Joseph Guillaume <joseph.guillaume@anu.edu.au>
+Authors@R: c(person("Jasper","Vrugt",role="aut",comment="Matlab original"),
+	person("Joseph","Guillaume",role=c("aut","cre"),comment="R implementation and added functionality",email="joseph.guillaume@anu.edu.au"),
+	person("Felix","Andrews",role="aut",comment="R implementation and added functionality",email="felix@nfrac.org"))
 Description: Efficient global MCMC even in high-dimensional spaces.
   Based on the original MATLAB code written by Jasper Vrugt.
   Methods for calibration and prediction using the DREAM algorithm

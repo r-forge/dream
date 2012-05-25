@@ -11,6 +11,9 @@ Banshp <- function(x,bpar,imat){
   S <- -0.5 * (x %*% imat) %*% as.matrix(x)
   return(S)
 }
+## Output manually verified against matlab version
+##Banshp(1:10,bpar,imat) ## Banshp(1:10,Extra)
+##Banshp(rep(1,10),bpar,imat) ## Banshp(ones(1,10),Extra)
 
 control <- list(
                 ndim=10,
@@ -57,12 +60,41 @@ dd <- dream(
 summary(dd)
 
 
-## Show banana
+## Show bananity
 library(lattice)
 ddm <- as.matrix(window(dd))
 plot(ddm[,1],ddm[,2])
 splom(ddm)
 
-## Results were compared to two matlab runs
+## Compare to two matlab runs
+fn.example1a <- "http://dream.r-forge.r-project.org/matlab_test/example1a.mat"
+fn.example1b <- "http://dream.r-forge.r-project.org/matlab_test/example1b.mat"
+
+for (fn.example in c(fn.example1a,fn.example1b)){
+  compareToMatlab(fn.example,dd)
+  mat <- readMat(fn.example)
+  all.equal(muX,as.numeric(mat$Extra[,,1]$muX))
+  all.equal(qcov,mat$Extra[,,1]$qcov)
+  all.equal(imat,mat$Extra[,,1]$imat)
+  all.equal(bpar,as.numeric(mat$Extra[,,1]$bpar))
+}
+
 ## While banana doesn't appear to match, it appears this is because it is a difficult problem
 ## Separate matlab results do not match either
+
+## Compare matlab runs
+matb <- getMatlabSeq(readMat(fn.example1b))
+matb <- as.matrix(window(matb,start=1+(end(matb)-1)*(1-0.5)))
+
+mata <- getMatlabSeq(readMat(fn.example1a))
+mata <- as.matrix(window(mata,start=1+(end(mata)-1)*(1-0.5)))
+
+pvals <- sapply(1:ncol(mata), function(i) ks.test(mata[,i], matb[, i])$p.value)
+round(pvals,2)
+
+plotMCMCQQ(matb,mata)
+
+## Results from matlab version
+plot(mata[,1],mata[,2])
+
+splom(mata)

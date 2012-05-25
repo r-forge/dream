@@ -1,5 +1,5 @@
 ## Example 2
-## n-dimensional Gaussian distribution
+##n-dimensional Gaussian distribution
 ## From Vrugt's matlab code
 
 library(dream)
@@ -33,13 +33,22 @@ for (i in 1:ndim){
   }
 }
 invC <- solve(C) ## checked against matlab for ndim=3 and 7
+##The following lines are defined in the matlab code but not used
+##qcov <- C
+##muX <- rep(0,ndim)
+##Extra.mu = zeros(1,MCMCPar.n); ## Define center of target
 
 normalfunc <- function(x){
+  ##p = mvnpdf(x,Extra.mu,Extra.qcov); ##commented out in matlab code
   as.numeric(-0.5* x %*% invC %*% matrix(x))
 }
+## matches output from matlab
+##normalfunc(replicate(ndim,-3)) ##normalfunc(-3*ones(1,MCMCPar.n),Extra)
+##normalfunc(1:ndim) ## normalfunc(1:MCMCPar.n,Extra)
 
 ddd <- dream(normalfunc,
              func.type="logposterior.density",
+             ##INIT=LHSInit,
              pars=pars,
              control=control
              )
@@ -65,5 +74,8 @@ checkNormality(window(ddd,frac=0.45))
 checkNormality(window(simulate(ddd,nsim=1e4)))
 
 
+##############################################
+
 ## Output matches that from matlab
+compareToMatlab("http://dream.r-forge.r-project.org/matlab_test/example2a",ddd)
 

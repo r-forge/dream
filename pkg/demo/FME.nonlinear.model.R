@@ -1,7 +1,5 @@
-
 ## Example from FME vignette, p21, section 7. Soetaert & Laine
 ## Nonlinear model parameter estimation
-## TODO: document more clearly, better outputs
 ## 
 
 ## http://r-forge.r-project.org/plugins/scmsvn/viewcvs.php/pkg/FME/inst/doc/FMEmcmc.Rnw?rev=96&root=fme&view=markup
