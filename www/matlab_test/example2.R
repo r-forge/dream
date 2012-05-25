@@ -77,5 +77,5 @@ checkNormality(window(simulate(ddd,nsim=1e4)))
 ##############################################
 
 ## Output matches that from matlab
-compareToMatlab("http://dream.r-forge.r-project.org/matlab_test/example2a",ddd)
+compareToMatlab("http://dream.r-forge.r-project.org/matlab_test/example2a.mat",ddd)
 
