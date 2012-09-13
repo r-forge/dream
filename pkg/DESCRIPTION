@@ -12,5 +12,6 @@ Depends: coda
 Suggests: snow, R.matlab, lattice, reshape, mgcv
 Enhances: multicore, foreach, doMPI, doMC, doSNOW
 Imports: stats, utils
-License: file LICENSE
+License: bsd
+Copyright: The code in ACR.R,AdaptpCR.R,CalcCbWb.R,CalcDelta.R, non-parallelised code in CompDensity.R, CovInit.R, DEStrategy.R, dream.R, GenCGR.R, handleBounds.R, LHSInit.R,metrop.R,offde.R,RemOutlierChains.R is Copyright (c) 2008, Los Alamos National Security, LLC. All other code is Copyright(C) Joseph Guillaume and Felix Andrews.
 URL: http://dream.r-forge.r-project.org/
