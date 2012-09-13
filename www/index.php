@@ -53,7 +53,7 @@ For information on how to use dream, please run in R:<ul>
 <li><i>demo(FME.nonlinear.model)</i> - Calibrating the non-linear model shown
       in the <a href="http://fme.r-forge.r-project.org/">FME package</a> vignette</li>
 <li><i>demo(FME.nonlinear.model_parallelisation)</i> - Example of parallelisation using the <a href="http://cran.r-project.org/web/packages/snow/index.html">SNOW package</a></li>
-<li><i>demo(parallelisation_chain_id)</i> - Example of parallelisation when DREAM calls an external model using batch files in separate folders</li>
+<li><i>demo(parallelisation_chain_id)</i> - Example of parallelisation when DREAM calls an external model using batch files in separate folders.</li>
 </ul>
 <p>
 To cite the DREAM algorithm please use:
@@ -79,6 +79,9 @@ For additional information on the algorithm also see:<ul>
   approaches in hydrologic modeling?
   <b>Stochastic Environmental Research and Risk Assessment</b> 23 (7), 1011--1026.
   DOI: <a href="http://dx.doi.org/10.1007/s00477-008-0274-y">10.1007/s00477-008-0274-y</a>
+</li>
+<li>
+An <a href="./swat/LREWswI_synthetic.zip">example of parallelisation of DREAM for the SWAT model</a> (ZIP file) can be downloaded. Thanks to John Joseph for this contribution.
 </li>
 </ul>
 
