@@ -34,7 +34,7 @@ handleBounds <- function(x, lower, upper, bound.handling)
            },
            none = x,
            rand = {
-             x[c(too.low,too.high),p] <- lower[p] +  runif(1)*(upper[p]-lower[p])
+             x[c(too.low,too.high),p] <- lower[p] +  runif(length(too.low)+length(too.high))*(upper[p]-lower[p])
            },
            stop("Unrecognised value of 'bound.handling'")
            )#switch

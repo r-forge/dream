@@ -51,7 +51,7 @@ dreamDefaults <- function()
          eps = 5e-2,             ## Random error for ergodicity
          outlierTest = 'IQR_test', ## What kind of test to detect outlier chains?
          pCR.Update = TRUE,      ## Adaptive tuning of crossover values
-         boundHandling = 'reflect', ## Boundary handling: "reflect", "bound", "fold", "none"
+         boundHandling = 'reflect', ## Boundary handling: "reflect", "bound", "fold", "none","rand"
          burnin.length=0.1, ## Proportion of iterations considered to be burnin. 0 to turn off.
 ### Termination criteria. TODO: are the 2nd two valid, given that ndraw is used in adaptive pcr
          ndraw = 1e5,            ## maximum number of function evaluations
@@ -200,7 +200,7 @@ dream <- function(FUN, func.type,pars,
   ## Check validity of settings
   if (control$DEpairs==0) stop("control$DEpairs set to 0. Increase nseq?")
   stopifnot(control$DEpairs<=(control$nseq-1)/2) ## Requirement of offde
-  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none"))
+  stopifnot(control$boundHandling %in% c("reflect", "bound", "fold", "none","rand"))
   if (control$boundHandling == 'none') warning("No bound handling in use, parameters may cause errors elsewhere")
   stopifnot(control$REPORT>=0)
   if (control$parallel=="snow.chains"){
