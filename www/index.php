@@ -81,7 +81,8 @@ For additional information on the algorithm also see:<ul>
   DOI: <a href="http://dx.doi.org/10.1007/s00477-008-0274-y">10.1007/s00477-008-0274-y</a>
 </li>
 <li>
-An <a href="./swat/LREWswI_synthetic.zip">example of parallelisation of DREAM for the SWAT model</a> (ZIP file) can be downloaded. Thanks to John Joseph for this contribution.
+An <a href="./swat/LREWswI_synthetic.zip">example of parallelisation of DREAM for the SWAT model</a> (ZIP file) can be downloaded. Thanks to John Joseph for this contribution. This example is documented in the publication: 
+<br/> Joseph, J.F., J.H.A. Guillaume (2013) Using a parallelized MCMC algorithm in R to identify appropriate likelihood functions for SWAT, <b>Environmental Modelling & Software</b>, 46, pp 292-298, DOI: <a href="http://dx.doi.org/10.1016/j.envsoft.2013.03.012">10.1016/j.envsoft.2013.03.012</a>.
 </li>
 </ul>
 
