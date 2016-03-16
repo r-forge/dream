@@ -85,7 +85,7 @@ CompDensity <- function(pars,control,FUN,func.type,
            logposterior.density={
              p <- modpred
              logp <- modpred
-             stopifnot(all(logp<=0))
+             #stopifnot(all(logp<=0)) #density>1 is actually possible
            },
            ## Similar as 3, but now weights with the Measurement Sigma
            ## TODO: identical to rmse because difference is in metrop
